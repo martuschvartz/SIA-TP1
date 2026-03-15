@@ -5,6 +5,7 @@ Modular structure: enums/, entities/, board/, constants/
 """
 
 from sokoban_engine.board.board import Board
+from sokoban_engine.board.board_snapshot import BoardSnapshot
 from sokoban_engine.board.board_state import BoardState
 from sokoban_engine.entities.box import Box
 from sokoban_engine.entities.goal import Goal
@@ -15,6 +16,7 @@ from sokoban_engine.enums.move_result import MoveResult
 
 __all__ = [
     "Board",
+    "BoardSnapshot",
     "BoardState",
     "Box",
     "Direction",

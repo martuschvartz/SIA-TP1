@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import copy
 
+from sokoban_engine.board.board_snapshot import BoardSnapshot
 from sokoban_engine.board.board_state import BoardState
 from sokoban_engine.constants import (
     BOX_CHAR,
@@ -158,6 +159,23 @@ class Board:
         return BoardState(
             player_pos=self._player.position,
             box_positions=frozenset(b.position for b in self._boxes),
+        )
+
+    def get_snapshot(self) -> BoardSnapshot:
+        """
+        Returns the static description of the level: walls, goals, and bounds.
+        Call once at game start and reuse throughout the game or AI search.
+        """
+        all_positions = list(self._walls) + list(self._goals)
+        xs = [x for x, _ in all_positions]
+        ys = [y for _, y in all_positions]
+        return BoardSnapshot(
+            walls=frozenset(self._walls),
+            goals=frozenset(self._goals),
+            min_x=min(xs) if xs else 0,
+            min_y=min(ys) if ys else 0,
+            max_x=max(xs) if xs else 0,
+            max_y=max(ys) if ys else 0,
         )
 
     def is_solved(self) -> bool:
