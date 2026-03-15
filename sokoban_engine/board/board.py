@@ -6,9 +6,8 @@ from __future__ import annotations
 
 import copy
 
-from sokoban_back.board_state import BoardState
-from sokoban_back.box import Box
-from sokoban_back.constants import (
+from sokoban_engine.board.board_state import BoardState
+from sokoban_engine.constants import (
     BOX_CHAR,
     BOX_ON_GOAL_CHAR,
     GOAL_CHAR,
@@ -16,9 +15,10 @@ from sokoban_back.constants import (
     PLAYER_ON_GOAL_CHAR,
     WALL_CHAR,
 )
-from sokoban_back.direction import Direction
-from sokoban_back.move_result import MoveResult
-from sokoban_back.player import Player
+from sokoban_engine.entities.box import Box
+from sokoban_engine.entities.player import Player
+from sokoban_engine.enums.direction import Direction
+from sokoban_engine.enums.move_result import MoveResult
 
 
 class Board:
