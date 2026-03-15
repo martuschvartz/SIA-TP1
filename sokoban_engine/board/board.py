@@ -43,7 +43,7 @@ class Board:
 
     def _parse_level(self, level: str) -> None:
         """Parse the level string and populate the board."""
-        lines = level.strip().splitlines()
+        lines = level.splitlines()
         player_pos: tuple[int, int] | None = None
         box_positions: list[tuple[int, int]] = []
 
