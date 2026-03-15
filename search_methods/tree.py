@@ -32,7 +32,7 @@ class Tree:
                 return None
 
             self.exploredNodes.append(node)
-            list_node = sort_method(node.expand(), self.search_method)
+            list_node = sort_method(node.expand())
             for child in list_node:
                 self.frontLineNodes.put(child)
                 # todos los nodos ya tienen sus hijos guardados. No hace falta aca.
