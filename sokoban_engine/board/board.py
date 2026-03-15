@@ -28,6 +28,14 @@ class Board:
     All game interactions go through this class.
     """
 
+    @staticmethod
+    def get_box_at(pos: tuple[int, int], state: BoardState) -> Box | None:
+        """Return the box at the given position, or None."""
+        for box in state.boxes:
+            if box.position == pos:
+                return box
+        return None
+
     def __init__(self, level: str) -> None:
         """
         Initialize the board from a level string.
@@ -73,15 +81,15 @@ class Board:
         self._boxes = [Box(pos, pos in self._goals) for pos in box_positions]
         self._initial_state = (player_pos, frozenset(box_positions))
 
-    @property
-    def player(self) -> Player:
-        """The player object (read-only)."""
-        return self._player
-
-    @property
-    def boxes(self) -> list[Box]:
-        """List of box objects (read-only)."""
-        return self._boxes
+    # @property
+    # def player(self) -> Player:
+    #     """The player object (read-only)."""
+    #     return self._player
+    #
+    # @property
+    # def boxes(self) -> list[Box]:
+    #     """List of box objects (read-only)."""
+    #     return self._boxes
 
     @property
     def walls(self) -> set[tuple[int, int]]:
@@ -93,21 +101,14 @@ class Board:
         """Set of goal positions (read-only)."""
         return self._goals
 
-    def _get_box_at(self, pos: tuple[int, int]) -> Box | None:
-        """Return the box at the given position, or None."""
-        for box in self._boxes:
-            if box.position == pos:
-                return box
-        return None
-
-    def get_legal_moves(self) -> list[Direction]:
+    def get_legal_moves(self, state: BoardState) -> list[Direction]:
         """
         Returns all directions the player can legally move in the current state.
         A move is legal if the target is not a wall, and if pushing a box,
         the cell behind it is free of walls and other boxes.
         """
         legal: list[Direction] = []
-        px, py = self._player.position
+        px, py = state.player
 
         for direction in Direction:
             dx, dy = direction.delta
@@ -116,67 +117,67 @@ class Board:
             if new_player_pos in self._walls:
                 continue
 
-            box = self._get_box_at(new_player_pos)
+            box = Board.get_box_at(new_player_pos, state)
             if box is not None:
                 new_box_pos = (new_player_pos[0] + dx, new_player_pos[1] + dy)
                 if new_box_pos in self._walls:
                     continue
-                if self._get_box_at(new_box_pos) is not None:
+                if Board.get_box_at(new_box_pos, state) is not None:
                     continue
 
             legal.append(direction)
 
         return legal
 
-    def move(self, direction: Direction) -> MoveResult:
+    def move(self, direction: Direction, state: BoardState) -> MoveResult:
         """
         Attempts to move the player in the given direction.
         Returns MoveResult.SUCCESS, MoveResult.WIN, or MoveResult.ILLEGAL.
         """
-        px, py = self._player.position
+        px, py = state.player.position
         dx, dy = direction.delta
         new_player_pos = (px + dx, py + dy)
 
         if new_player_pos in self._walls:
             return MoveResult.ILLEGAL
 
-        box = self._get_box_at(new_player_pos)
+        box = Board.get_box_at(new_player_pos, state)
         if box is not None:
             new_box_pos = (new_player_pos[0] + dx, new_player_pos[1] + dy)
             if new_box_pos in self._walls:
                 return MoveResult.ILLEGAL
-            if self._get_box_at(new_box_pos) is not None:
+            if Board.get_box_at(new_box_pos, state) is not None:
                 return MoveResult.ILLEGAL
             box.position = new_box_pos
             box.on_goal = new_box_pos in self._goals
 
-        self._player.position = new_player_pos
+        state.player.position = new_player_pos
 
-        return MoveResult.WIN if self.is_solved() else MoveResult.SUCCESS
+        return MoveResult.WIN if state.is_solved() else MoveResult.SUCCESS
 
-    def get_state(self) -> BoardState:
-        """Returns an immutable, hashable snapshot of the current board state."""
-        return BoardState(
-            player_pos=self._player.position,
-            box_positions=frozenset(b.position for b in self._boxes),
-        )
-
-    def get_snapshot(self) -> BoardSnapshot:
-        """
-        Returns the static description of the level: walls, goals, and bounds.
-        Call once at game start and reuse throughout the game or AI search.
-        """
-        all_positions = list(self._walls) + list(self._goals)
-        xs = [x for x, _ in all_positions]
-        ys = [y for _, y in all_positions]
-        return BoardSnapshot(
-            walls=frozenset(self._walls),
-            goals=frozenset(self._goals),
-            min_x=min(xs) if xs else 0,
-            min_y=min(ys) if ys else 0,
-            max_x=max(xs) if xs else 0,
-            max_y=max(ys) if ys else 0,
-        )
+    # def get_state(self) -> BoardState:
+    #     """Returns an immutable, hashable snapshot of the current board state."""
+    #     return BoardState(
+    #         player_pos=self._player.position,
+    #         box_positions=frozenset(b.position for b in self._boxes),
+    #     )
+    #
+    # def get_snapshot(self) -> BoardSnapshot:
+    #     """
+    #     Returns the static description of the level: walls, goals, and bounds.
+    #     Call once at game start and reuse throughout the game or AI search.
+    #     """
+    #     all_positions = list(self._walls) + list(self._goals)
+    #     xs = [x for x, _ in all_positions]
+    #     ys = [y for _, y in all_positions]
+    #     return BoardSnapshot(
+    #         walls=frozenset(self._walls),
+    #         goals=frozenset(self._goals),
+    #         min_x=min(xs) if xs else 0,
+    #         min_y=min(ys) if ys else 0,
+    #         max_x=max(xs) if xs else 0,
+    #         max_y=max(ys) if ys else 0,
+    #     )
 
     def is_solved(self) -> bool:
         """Returns True if every Box is positioned on a Goal tile."""
