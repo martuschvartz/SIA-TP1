@@ -11,3 +11,7 @@ class Box:
 
     position: tuple[int, int]
     on_goal: bool = False
+
+
+    def __hash__(self):
+        return hash(self.position)

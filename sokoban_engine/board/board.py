@@ -47,7 +47,7 @@ class Board:
         self._goals: set[tuple[int, int]] = set()
         self._player: Player = Player((0, 0))
         self._boxes: list[Box] = []
-        self._initial_state: tuple[tuple[int, int], frozenset[tuple[int, int]]] | None = None
+        self._initial_state: BoardState
         self._parse_level(level)
 
     def _parse_level(self, level: str) -> None:
@@ -79,7 +79,7 @@ class Board:
 
         self._player = Player(player_pos)
         self._boxes = [Box(pos, pos in self._goals) for pos in box_positions]
-        self._initial_state = (player_pos, frozenset(box_positions))
+        self._initial_state = BoardState(Player(player_pos), set(self._boxes))
 
     # @property
     # def player(self) -> Player:
@@ -90,6 +90,10 @@ class Board:
     # def boxes(self) -> list[Box]:
     #     """List of box objects (read-only)."""
     #     return self._boxes
+
+    @property
+    def initial_state(self) -> BoardState:
+        return self._initial_state
 
     @property
     def walls(self) -> set[tuple[int, int]]:
@@ -108,7 +112,7 @@ class Board:
         the cell behind it is free of walls and other boxes.
         """
         legal: list[Direction] = []
-        px, py = state.player
+        px, py = state.player.position
 
         for direction in Direction:
             dx, dy = direction.delta
@@ -162,22 +166,22 @@ class Board:
     #         box_positions=frozenset(b.position for b in self._boxes),
     #     )
     #
-    # def get_snapshot(self) -> BoardSnapshot:
-    #     """
-    #     Returns the static description of the level: walls, goals, and bounds.
-    #     Call once at game start and reuse throughout the game or AI search.
-    #     """
-    #     all_positions = list(self._walls) + list(self._goals)
-    #     xs = [x for x, _ in all_positions]
-    #     ys = [y for _, y in all_positions]
-    #     return BoardSnapshot(
-    #         walls=frozenset(self._walls),
-    #         goals=frozenset(self._goals),
-    #         min_x=min(xs) if xs else 0,
-    #         min_y=min(ys) if ys else 0,
-    #         max_x=max(xs) if xs else 0,
-    #         max_y=max(ys) if ys else 0,
-    #     )
+    def get_snapshot(self) -> BoardSnapshot:
+        """
+        Returns the static description of the level: walls, goals, and bounds.
+        Call once at game start and reuse throughout the game or AI search.
+        """
+        all_positions = list(self._walls) + list(self._goals)
+        xs = [x for x, _ in all_positions]
+        ys = [y for _, y in all_positions]
+        return BoardSnapshot(
+            walls=frozenset(self._walls),
+            goals=frozenset(self._goals),
+            min_x=min(xs) if xs else 0,
+            min_y=min(ys) if ys else 0,
+            max_x=max(xs) if xs else 0,
+            max_y=max(ys) if ys else 0,
+        )
 
     def is_solved(self) -> bool:
         """Returns True if every Box is positioned on a Goal tile."""
