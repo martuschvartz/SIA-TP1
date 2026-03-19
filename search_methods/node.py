@@ -28,7 +28,6 @@ class TreeNode:
             move_result = self.board.move(direction, new_state) == MoveResult.WIN
             new_node = TreeNode(new_state, self.board, self.cost + 1, move_result, self.level+1, direction, self)
             self.children.append(new_node)
-            self.children.append(new_node)
         return self.children
 
     def get_children(self) -> List['TreeNode']:

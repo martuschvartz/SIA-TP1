@@ -17,6 +17,11 @@ LEVEL = """
     #    #
     ######
 """
+# LEVEL = """
+#     ###########
+#    # . $ @  $. #
+#     ###########
+# """
 
 
 def render(snapshot: BoardSnapshot, state: BoardState) -> str:

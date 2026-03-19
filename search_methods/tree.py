@@ -1,6 +1,6 @@
 from search_methods.node import TreeNode
 from typing import List
-from utils import sort_method
+from search_methods.utils import sort_method
 from sokoban_engine import BoardState, Board, Direction
 
 
@@ -18,7 +18,7 @@ def get_solution_path(goal_node:TreeNode) -> List[Direction]:
 class Tree:
     def __init__(self, board: Board, init_state: BoardState):
         #nodo raiz
-        self.root = TreeNode(init_state, board, 0, False,0,None,None)
+        self.root = TreeNode(init_state, board, 0, init_state.is_solved(),0,None,None)
 
         # lista de nodos frontera
         self.frontLineNodes:List[TreeNode] = []
@@ -37,7 +37,7 @@ class Tree:
             node = self.frontLineNodes.pop(0)
 
             if node.get_is_goal():
-                return get_solution_path(node).reverse()
+                return list(reversed(get_solution_path(node)))
 
             self.exploredNodes.append(node)
             list_node = node.expand()

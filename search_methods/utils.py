@@ -1,8 +1,10 @@
-from search_methods.node import TreeNode
-from typing import List
+from pathlib import Path
 import json
+from typing import List
+from search_methods.node import TreeNode
 
-with open("config.json") as f:
+CONFIG_PATH = Path(__file__).with_name("config.json")
+with CONFIG_PATH.open() as f:
     config = json.load(f)
 
 search_method = config["search_method"]
