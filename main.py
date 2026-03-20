@@ -7,16 +7,30 @@ from copy import copy, deepcopy
 from sokoban_engine import Board, BoardSnapshot, BoardState, Direction, MoveResult
 
 LEVEL = """
-    ######
-    #    #
-    #.$$.#
-  ###  $ ###
-  #   $@$  #
-  ###  $ ###
-    #.$$.#
-    #    #
-    ######
-"""
+      ###
+      #.#
+  #####.#####
+ ##         ##
+##  # # # #  ##
+#             #
+#     # #     #
+#     $@$     #
+####  ###  ####
+   #### ####
+        """
+
+
+# LEVEL = """
+#     ######
+#     #    #
+#     #.$$.#
+#   ###  $ ###
+#   #   $@$  #
+#   ###  $ ###
+#     #.$$.#
+#     #    #
+#     ######
+# """
 # LEVEL = """
 #     ###########
 #    # . $ @  $. #
@@ -69,6 +83,9 @@ def main() -> None:
     state = deepcopy(board.initial_state)
     while True:
         print(render(snapshot, state))
+        if board.is_in_deadlock(state):
+            print("DeadLock!")
+            break
         legal = board.get_legal_moves(state)
         legal_str = ", ".join(direction_to_key[d].upper() for d in legal) or "ninguno"
         boxes_done = len(snapshot.boxes_on_goals(state))
@@ -81,7 +98,7 @@ def main() -> None:
             continue
         key = cmd[0]
 
-        if key == "q":
+        if key == "q" or board.is_in_deadlock(state):
             print("Chau!")
             break
 

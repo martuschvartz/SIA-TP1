@@ -1,3 +1,4 @@
 {
-  "search_method": "dfs"
+  "search_method": "bfs",
+  "max_tree_depth": 10000
 }

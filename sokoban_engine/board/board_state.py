@@ -34,6 +34,10 @@ class BoardState:
     def get_boxes_positions(self) -> frozenset[tuple[int, int]]:
         return frozenset(b.position for b in self.boxes)
 
+
+    def __hash__(self):
+        return hash(self._boxes, self.player)
+
     @property
     def player(self) -> Player:
         return self._player

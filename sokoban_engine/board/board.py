@@ -133,6 +133,34 @@ class Board:
 
         return legal
 
+    def can_move_box_to_dir(self, state: BoardState, position: tuple[int,int]) -> list[Direction]:
+        """
+        returns possible box movements given a current position.
+        used to determine whether a box can be moved in a given direction, which is useful
+        to check for unsolvable cases.
+        """
+        legal: list[Direction] = []
+        px,py = position
+        for direction in Direction:
+            dx, dy = direction.delta
+            new_pos = (px + dx, py + dy)
+
+            if new_pos in self._walls:
+                continue
+            legal.append(direction)
+        return legal
+
+    def is_in_deadlock(self, state: BoardState) -> bool:
+        for box in state.boxes:
+            legal_directions = self.can_move_box_to_dir(state,box.position)
+            if box.on_goal:
+                continue
+            if len(legal_directions) < 2:
+                return True
+            if len(legal_directions) == 2 and not Direction.can_move_box(legal_directions[0], legal_directions[1]):
+                return True
+        return False
+
     def move(self, direction: Direction, state: BoardState) -> MoveResult:
         """
         Attempts to move the player in the given direction.
@@ -200,3 +228,5 @@ class Board:
         for box, pos in zip(self._boxes, box_positions):
             box.position = pos
             box.on_goal = pos in self._goals
+
+

@@ -3,6 +3,7 @@ from time import sleep
 from typing import List, Optional
 
 import search_methods
+from search_methods.utils import max_tree_depth
 # from search_methods.SearchMethod import SearchMethod
 from sokoban_engine import BoardState, Board, Direction, MoveResult
 
@@ -23,6 +24,9 @@ class TreeNode:
 
 
     def expand(self) -> List['TreeNode']:
+        if self.level >= max_tree_depth or self.board.is_in_deadlock(self.state):
+            return self.children
+
         for direction in self.possible_actions:
             new_state = copy.deepcopy(self.state)
             move_result = self.board.move(direction, new_state) == MoveResult.WIN
