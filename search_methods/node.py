@@ -24,7 +24,7 @@ class TreeNode:
 
 
     def expand(self) -> List['TreeNode']:
-        if self.level >= max_tree_depth or self.board.is_in_deadlock(self.state):
+        if  self.board.is_in_deadlock(self.state):
             return self.children
 
         for direction in self.possible_actions:

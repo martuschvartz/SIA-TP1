@@ -35,8 +35,13 @@ class BoardState:
         return frozenset(b.position for b in self.boxes)
 
 
-    def __hash__(self):
-        return hash(self._boxes, self.player)
+
+    def key(self) -> tuple[tuple[int, int], frozenset[tuple[int, int]]]:
+        """
+        used for hashing and equal purposes, since using a hash or equals function over mutable
+        objects is unsafe
+        """
+        return self.player.position, frozenset(b.position for b in self.boxes)
 
     @property
     def player(self) -> Player:

@@ -42,7 +42,7 @@ def main():
 
     print(f"Solution found with {len(solution)} moves.")
     replay_state = deepcopy(board.initial_state)
-    replay_solution(board, replay_state, solution, delay_seconds=1.5)
+    replay_solution(board, replay_state, solution, delay_seconds=1)
 
 
 if __name__ == "__main__":

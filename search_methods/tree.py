@@ -19,6 +19,7 @@ class Tree:
     def __init__(self, board: Board, init_state: BoardState):
         #nodo raiz
         self.root = TreeNode(init_state, board, 0, init_state.is_solved(),0,None,None)
+        self.known_states : set[tuple[tuple[int, int], frozenset[tuple[int, int]]]] = set()
 
         # lista de nodos frontera
         self.frontLineNodes:List[TreeNode] = []
@@ -40,10 +41,12 @@ class Tree:
                 return list(reversed(get_solution_path(node)))
 
             self.exploredNodes.append(node)
-            list_node = node.expand()
-            for child in list_node:
-                self.frontLineNodes.append(child)
-                # todos los nodos ya tienen sus hijos guardados. No hace falta aca.
+            if node.state.key() not in self.known_states:
+                self.known_states.add(node.state.key())
+                list_node = node.expand()
+                for child in list_node:
+                    self.frontLineNodes.append(child)
+                    # todos los nodos ya tienen sus hijos guardados. No hace falta aca.
             self.frontLineNodes = sort_method(self.frontLineNodes)
 
         # Si llega aca, es porque no existe una solucion alcanzable.
