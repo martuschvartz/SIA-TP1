@@ -2,6 +2,9 @@ from pathlib import Path
 import json
 from typing import List, TYPE_CHECKING
 
+from search_methods.heuristics import Heuristics
+from sokoban_engine import BoardSnapshot
+
 if TYPE_CHECKING:
     from search_methods.node import TreeNode
 
@@ -13,7 +16,11 @@ with CONFIG_PATH.open() as f:
 search_method = config["search_method"]
 max_tree_depth = config["max_tree_depth"]
 
-def sort_method(node_list: List["TreeNode"]) -> List["TreeNode"]:
+
+def sort_method(node_list: List["TreeNode"], snapshot: BoardSnapshot) -> List["TreeNode"]:
+    #Programación defensiva B)
+    if not node_list:
+        return node_list
 
     if search_method == "dfs":
         return sorted(node_list, key=lambda node: node.level, reverse=True)
@@ -21,13 +28,18 @@ def sort_method(node_list: List["TreeNode"]) -> List["TreeNode"]:
     elif search_method == "bfs":
         return sorted(node_list, key=lambda node: node.level)
 
-    #TODO
     elif search_method == "a*":
-        return None
+        return sorted(
+            node_list,
+            key=lambda n: (n.cost + Heuristics.apply_heuristic(n.state, snapshot), n.level),
+        )
 
     elif search_method == "greedy":
-        return None
+        return sorted(
+            node_list,
+            key=lambda n: (Heuristics.apply_heuristic(n.state, snapshot), n.level),
+        )
 
-    return None
-
-
+    raise ValueError(
+        f"[ERROR]: '{search_method}' no es un metodo de busqueda valido. Use: bfs, dfs, greedy o a*"
+    )

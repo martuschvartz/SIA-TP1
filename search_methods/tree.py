@@ -17,6 +17,7 @@ def get_solution_path(goal_node:TreeNode) -> List[Direction]:
 
 class Tree:
     def __init__(self, board: Board, init_state: BoardState):
+        self._snapshot = board.get_snapshot()
         #nodo raiz
         self.root = TreeNode(init_state, board, 0, init_state.is_solved(),0,None,None)
         self.known_states : set[tuple[tuple[int, int], frozenset[tuple[int, int]]]] = set()
@@ -47,7 +48,7 @@ class Tree:
                 for child in list_node:
                     self.frontLineNodes.append(child)
                     # todos los nodos ya tienen sus hijos guardados. No hace falta aca.
-            self.frontLineNodes = sort_method(self.frontLineNodes)
+            self.frontLineNodes = sort_method(self.frontLineNodes, self._snapshot)
 
         # Si llega aca, es porque no existe una solucion alcanzable.
         return None

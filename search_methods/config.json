@@ -1,4 +1,5 @@
 {
-  "search_method": "bfs",
-  "max_tree_depth": 10000
+  "search_method": "greedy",
+  "max_tree_depth": 10000,
+  "heuristic": "nearest_goal_per_box"
 }
