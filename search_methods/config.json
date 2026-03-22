@@ -1,5 +1,5 @@
 {
-  "search_method": "bfs",
+  "search_method": "greedy",
   "max_tree_depth": 10000,
   "heuristic": "manhattan"
 }

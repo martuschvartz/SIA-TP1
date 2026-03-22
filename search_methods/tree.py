@@ -29,18 +29,33 @@ class Tree:
         # TODO: maybe esto puede ser un Set
         self.exploredNodes : List[TreeNode] = []
         self.solution_path : List[Direction] = []
+        self.solution_cost: int | None = None
+        self.result_success: bool = False
 
-    # def calculate_heuristic(self, state:BoardState) -> int:
-    #     return self.root.search_method.calculate_heuristic(state)
-
+        self.expanded_nodes_count: int = 0
+        self.frontier_nodes_count: int = 0
+        self.frontier_nodes_remaining: int = 0
+        self.max_frontier_nodes_count: int = 0
 
     def start_searching(self)->List[Direction]|None:
         self.known_states = {self.root.state.key(): self.root.cost}
         self.frontLineNodes = []
+        self.exploredNodes = []
+        self.solution_path = []
+        self.solution_cost = None
+        self.result_success = False
+        self.expanded_nodes_count = 0
+        self.frontier_nodes_count = 0
+        self.frontier_nodes_remaining = 0
+        self.max_frontier_nodes_count = 0
+
         heapq.heappush(
             self.frontLineNodes,
             (get_priority(self.root, self._snapshot), self.root),
         )
+        self.frontier_nodes_count += 1
+        self.max_frontier_nodes_count = max(self.max_frontier_nodes_count, len(self.frontLineNodes))
+
         while len(self.frontLineNodes) > 0:
             _priority, node = heapq.heappop(self.frontLineNodes)
 
@@ -49,9 +64,14 @@ class Tree:
                 continue
 
             if node.get_is_goal():
-                return list(reversed(get_solution_path(node)))
+                self.solution_path = list(reversed(get_solution_path(node)))
+                self.solution_cost = node.cost
+                self.result_success = True
+                self.frontier_nodes_remaining = len(self.frontLineNodes)
+                return self.solution_path
 
             self.exploredNodes.append(node)
+            self.expanded_nodes_count += 1
             list_node = node.expand()
             # Con esto podes evitar hijos con el mismo estado con mayor costo.
             for child in list_node:
@@ -62,6 +82,13 @@ class Tree:
                         self.frontLineNodes,
                         (get_priority(child, self._snapshot), child),
                     )
+                    self.frontier_nodes_count += 1
+
+            self.max_frontier_nodes_count = max(
+                self.max_frontier_nodes_count,
+                len(self.frontLineNodes),
+            )
 
         # Si llega aca, es porque no existe una solucion alcanzable.
+        self.frontier_nodes_remaining = len(self.frontLineNodes)
         return None

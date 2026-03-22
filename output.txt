@@ -1,0 +1,7 @@
+=== Search statistics ===
+Result: success
+Solution cost: 88
+Expanded nodes: 1463
+Frontier nodes: 143 pending, 1608 inserted
+Solution path: RIGHT -> LEFT -> UP -> UP -> LEFT -> LEFT -> DOWN -> DOWN -> RIGHT -> LEFT -> UP -> UP -> RIGHT -> RIGHT -> RIGHT -> RIGHT -> DOWN -> RIGHT -> DOWN -> DOWN -> LEFT -> UP -> UP -> UP -> UP -> DOWN -> RIGHT -> RIGHT -> UP -> UP -> LEFT -> LEFT -> LEFT -> RIGHT -> DOWN -> DOWN -> LEFT -> LEFT -> UP -> UP -> RIGHT -> RIGHT -> DOWN -> DOWN -> DOWN -> DOWN -> LEFT -> LEFT -> LEFT -> RIGHT -> UP -> UP -> LEFT -> LEFT -> DOWN -> LEFT -> DOWN -> DOWN -> RIGHT -> UP -> UP -> UP -> UP -> DOWN -> LEFT -> LEFT -> UP -> UP -> RIGHT -> RIGHT -> RIGHT -> RIGHT -> UP -> DOWN -> DOWN -> DOWN -> RIGHT -> RIGHT -> UP -> UP -> LEFT -> RIGHT -> DOWN -> DOWN -> LEFT -> LEFT -> UP -> UP
+Processing time: 0.087962 seconds

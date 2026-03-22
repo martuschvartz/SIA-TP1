@@ -1,5 +1,6 @@
 from copy import deepcopy
-from time import sleep
+from pathlib import Path
+from time import perf_counter, sleep
 
 from main import LEVEL, render
 from search_methods.tree import Tree
@@ -34,9 +35,32 @@ def main():
     initial_state = deepcopy(board.initial_state)
 
     tree = Tree(board, initial_state)
+    start_time = perf_counter()
     solution = tree.start_searching()
+    elapsed_seconds = perf_counter() - start_time
 
-    if not solution:
+    success = solution is not None
+    result_str = "success" if success else "failure"
+    solution_cost = tree.solution_cost if success else "N/A"
+    solution_path = " -> ".join(move.name for move in solution) if success else "Not found"
+
+    stats_lines = [
+        "=== Search statistics ===",
+        f"Result: {result_str}",
+        f"Solution cost: {solution_cost}",
+        f"Expanded nodes: {tree.expanded_nodes_count}",
+        (
+            "Frontier nodes: "
+            f"{tree.frontier_nodes_remaining} pending, {tree.frontier_nodes_count} inserted"
+        ),
+        f"Solution path: {solution_path}",
+        f"Processing time: {elapsed_seconds:.6f} seconds",
+    ]
+
+    output_file = Path(__file__).resolve().parent / "output.txt"
+    output_file.write_text("\n".join(stats_lines) + "\n", encoding="utf-8")
+
+    if solution is None:
         print("No reachable solution found.")
         return
 
