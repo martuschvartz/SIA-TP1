@@ -1,7 +1,0 @@
-=== Search statistics ===
-Result: success
-Solution cost: 46
-Expanded nodes: 47283
-Frontier nodes: 2700 pending, 49984 inserted
-Solution path: LEFT -> LEFT -> DOWN -> LEFT -> UP -> UP -> LEFT -> UP -> RIGHT -> RIGHT -> RIGHT -> LEFT -> DOWN -> DOWN -> RIGHT -> RIGHT -> UP -> UP -> UP -> UP -> UP -> DOWN -> DOWN -> DOWN -> DOWN -> DOWN -> RIGHT -> RIGHT -> DOWN -> RIGHT -> UP -> UP -> RIGHT -> UP -> LEFT -> LEFT -> LEFT -> RIGHT -> DOWN -> DOWN -> LEFT -> LEFT -> UP -> UP -> UP -> UP
-Processing time: 7.028907 seconds
