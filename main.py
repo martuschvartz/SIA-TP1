@@ -20,7 +20,7 @@ from sokoban_engine import Board
 from sokoban_pygame import run_ai_replay, run_player
 
 _REPO_ROOT = Path(__file__).resolve().parent
-_DEFAULT_MAP = _REPO_ROOT / "resources" / "maps" / "default.txt"
+_DEFAULT_MAP = _REPO_ROOT / "resources" / "maps" / "LEVEL1.txt"
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -31,6 +31,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         choices=("player", "ai"),
         default="ai",
         help="player = human WASD; ai = run search then animate solution (default: ai)",
+    )
+    parser.add_argument(
+        "--replay",
+        action="store_true",
+        help="In ai mode, animate the solution after search (default: disabled)",
     )
     parser.add_argument(
         "--search-method",
@@ -70,15 +75,17 @@ def _apply_settings(args: argparse.Namespace) -> None:
     )
 
 
-def _load_level_text(args: argparse.Namespace) -> str:
+def _load_level_text(args: argparse.Namespace) -> tuple[str, str]:
     map_path = Path(args.map_path) if args.map_path else _DEFAULT_MAP
+
     if not map_path.is_file():
         print(f"Map file not found: {map_path}", file=sys.stderr)
         sys.exit(1)
-    return map_path.read_text(encoding="utf-8")
+    level_name = map_path.stem
+    return map_path.read_text(encoding="utf-8"), level_name
 
 
-def _run_ai(board: Board) -> None:
+def _run_ai(board: Board, level_name: str, with_replay: bool) -> None:
     initial_state = deepcopy(board.initial_state)
     tree = Tree(board, initial_state)
     start_time = perf_counter()
@@ -96,6 +103,7 @@ def _run_ai(board: Board) -> None:
         SearchRunRecord(
             search_method=Settings.get_search_method(),
             heuristic=heuristic_name,
+            level_name=level_name,
             result=result_str,
             solution_cost=solution_cost,
             expanded_nodes=tree.expanded_nodes_count,
@@ -105,7 +113,6 @@ def _run_ai(board: Board) -> None:
             processing_time_seconds=round(elapsed_seconds, 6),
         )
     )
-
 
     stats_lines = [
         "=== Search statistics ===",
@@ -128,19 +135,20 @@ def _run_ai(board: Board) -> None:
         return
 
     print(f"Solution found with {len(solution)} moves.")
-    run_ai_replay(board, solution)
+    if with_replay: run_ai_replay(board, solution)
 
 
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
     _apply_settings(args)
-    level_text = _load_level_text(args)
+    level_text, level_name = _load_level_text(args)
+
     board = Board(level_text)
 
     if args.mode == "player":
         run_player(board)
     else:
-        _run_ai(board)
+        _run_ai(board, level_name, args.replay)
 
 
 if __name__ == "__main__":

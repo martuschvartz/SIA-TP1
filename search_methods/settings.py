@@ -13,12 +13,14 @@ class _Settings:
         self._max_tree_depth: int = 10_000
         self._heuristic: str = "nearest_goal_per_box"
 
+
     def load(self, path: Path | None = None) -> None:
         config_path = path or Path(__file__).with_name("config.json")
         with config_path.open(encoding="utf-8") as f:
             data = json.load(f)
         self._search_method = str(data["search_method"])
         self._max_tree_depth = int(data["max_tree_depth"])
+
         self._heuristic = str(data.get("heuristic", "nearest_goal_per_box"))
         heuristics_mod = importlib.import_module("search_methods.heuristics")
         heuristics_mod.validate_heuristic_name(self._heuristic)
@@ -44,6 +46,7 @@ class _Settings:
 
     def get_max_tree_depth(self) -> int:
         return self._max_tree_depth
+
 
 
 Settings = _Settings()

@@ -10,6 +10,7 @@ import pandas as pd
 class SearchRunRecord:
     search_method: str
     heuristic: str # Heuristic name or "None" for uninformed method
+    level_name: str
     result: str  # "success" or "failure"
     solution_cost: int | str
     expanded_nodes: int # counts total expanded nodes
@@ -25,6 +26,7 @@ class SearchRunLogger:
         self.columns = [
             "search_method",
             "heuristic",
+            "level_name",
             "result",
             "solution_cost",
             "expanded_nodes",
