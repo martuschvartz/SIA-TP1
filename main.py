@@ -1,122 +1,128 @@
 """
-Sokoban — modo prueba en terminal.
-w/a/s/d = mover, r = reset, q = salir. Presioná Enter después de cada tecla.
+Sokoban — entrypoint: pygame UI, player or AI mode.
+
+CLI arguments override values from search_methods/config.json when provided.
 """
-from copy import copy, deepcopy
 
-from sokoban_engine import Board, BoardSnapshot, BoardState, Direction, MoveResult
+from __future__ import annotations
 
-LEVEL = """
-      ###
-      #.#
-  #####.#####
- ##         ##
-##  # # # #  ##
-#             #
-#     # #     #
-#     $@$     #
-####  ###  ####
-   #### ####
-        """
+import argparse
+import sys
+from copy import deepcopy
+from pathlib import Path
+from time import perf_counter
 
+from search_methods.settings import Settings
+from search_methods.tree import Tree
+from sokoban_engine import Board
 
-# LEVEL = """
-#     ######
-#     #    #
-#     #.$$.#
-#   ###  $ ###
-#   #   $@$  #
-#   ###  $ ###
-#     #.$$.#
-#     #    #
-#     ######
-# """
-# LEVEL = """
-#     ###########
-#    # . $ @  $. #
-#     ###########
-# """
+from sokoban_pygame import run_ai_replay, run_player
+
+_REPO_ROOT = Path(__file__).resolve().parent
+_DEFAULT_MAP = _REPO_ROOT / "resources" / "maps" / "default.txt"
 
 
-def render(snapshot: BoardSnapshot, state: BoardState) -> str:
-    """Renders the board from a static snapshot and a dynamic state."""
-    walls = snapshot.walls
-    goals = snapshot.goals
-    player_pos = state.player.position
-    box_positions = state.get_boxes_positions()
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Sokoban with pygame (player or AI).")
+    parser.add_argument(
+        "-m",
+        "--mode",
+        choices=("player", "ai"),
+        default="ai",
+        help="player = human WASD; ai = run search then animate solution (default: ai)",
+    )
+    parser.add_argument(
+        "--search-method",
+        default=None,
+        metavar="METHOD",
+        help="Override config: bfs, dfs, a*, greedy",
+    )
+    parser.add_argument(
+        "--heuristic",
+        default=None,
+        metavar="NAME",
+        help="Override config heuristic (a* / greedy): zero, manhattan, nearest_goal_per_box, hungarian",
+    )
+    parser.add_argument(
+        "--map",
+        "--level",
+        dest="map_path",
+        default=None,
+        metavar="PATH",
+        help="Path to level .txt (default: resources/maps/default.txt)",
+    )
+    parser.add_argument(
+        "--config",
+        default=None,
+        metavar="PATH",
+        help="Path to search JSON config (default: search_methods/config.json)",
+    )
+    return parser.parse_args(argv)
 
-    lines = []
-    for y in range(snapshot.min_y, snapshot.max_y + 1):
-        row = []
-        for x in range(snapshot.min_x, snapshot.max_x + 1):
-            pos = (x, y)
-            if pos in walls:
-                row.append("#")
-            elif pos == player_pos:
-                row.append("+" if pos in goals else "@")
-            elif pos in box_positions:
-                row.append("*" if pos in goals else "$")
-            elif pos in goals:
-                row.append(".")
-            else:
-                row.append(" ")
-        lines.append("".join(row))
-    return "\n".join(lines)
+
+def _apply_settings(args: argparse.Namespace) -> None:
+    if args.config is not None:
+        Settings.load(Path(args.config))
+    Settings.override(
+        search_method=args.search_method,
+        heuristic=args.heuristic,
+    )
 
 
-def main() -> None:
-    board = Board(LEVEL)
-    snapshot = board.get_snapshot()
-    key_to_direction = {
-        "w": Direction.UP,
-        "s": Direction.DOWN,
-        "a": Direction.LEFT,
-        "d": Direction.RIGHT,
-    }
+def _load_level_text(args: argparse.Namespace) -> str:
+    map_path = Path(args.map_path) if args.map_path else _DEFAULT_MAP
+    if not map_path.is_file():
+        print(f"Map file not found: {map_path}", file=sys.stderr)
+        sys.exit(1)
+    return map_path.read_text(encoding="utf-8")
 
-    print("Sokoban — Prueba del motor")
-    print("w/a/s/d = mover | r = reset | q = salir")
-    print()
 
-    direction_to_key = {d: k for k, d in key_to_direction.items()}
+def _run_ai(board: Board) -> None:
+    initial_state = deepcopy(board.initial_state)
+    tree = Tree(board, initial_state)
+    start_time = perf_counter()
+    solution = tree.start_searching()
+    elapsed_seconds = perf_counter() - start_time
 
-    state = deepcopy(board.initial_state)
-    while True:
-        print(render(snapshot, state))
-        if board.is_in_deadlock(state):
-            print("DeadLock!")
-            break
-        legal = board.get_legal_moves(state)
-        legal_str = ", ".join(direction_to_key[d].upper() for d in legal) or "ninguno"
-        boxes_done = len(snapshot.boxes_on_goals(state))
-        total_goals = len(snapshot.goals)
-        print(f"Legal moves: {legal_str}   Boxes on goals: {boxes_done}/{total_goals}")
-        print()
+    success = solution is not None
+    result_str = "success" if success else "failure"
+    solution_cost = tree.solution_cost if success else "N/A"
+    solution_path = " -> ".join(move.name for move in solution) if success else "Not found"
 
-        cmd = input("> ").strip().lower()
-        if not cmd:
-            continue
-        key = cmd[0]
+    stats_lines = [
+        "=== Search statistics ===",
+        f"Result: {result_str}",
+        f"Solution cost: {solution_cost}",
+        f"Expanded nodes: {tree.expanded_nodes_count}",
+        (
+            "Frontier nodes: "
+            f"{tree.frontier_nodes_remaining} pending, {tree.frontier_nodes_count} inserted"
+        ),
+        f"Solution path: {solution_path}",
+        f"Processing time: {elapsed_seconds:.6f} seconds",
+    ]
 
-        if key == "q" or board.is_in_deadlock(state):
-            print("Chau!")
-            break
+    output_file = _REPO_ROOT / "output.txt"
+    output_file.write_text("\n".join(stats_lines) + "\n", encoding="utf-8")
 
-        if key == "r":
-            state = deepcopy(board.initial_state)
-            print("Reset.\n")
-            continue
+    if solution is None:
+        print("No reachable solution found.")
+        return
 
-        if key in key_to_direction:
-            result = board.move(key_to_direction[key],state)
-            if result == MoveResult.WIN:
-                print(render(snapshot, state))
-                print("\n¡Ganaste!")
-                break
-            elif result == MoveResult.ILLEGAL:
-                print("Movimiento ilegal.\n")
-        else:
-            print("Tecla no válida. Usá w/a/s/d, r o q.\n")
+    print(f"Solution found with {len(solution)} moves.")
+    run_ai_replay(board, solution)
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = _parse_args(argv)
+    _apply_settings(args)
+    level_text = _load_level_text(args)
+    board = Board(level_text)
+
+    if args.mode == "player":
+        run_player(board)
+    else:
+        _run_ai(board)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 {
-  "search_method": "greedy",
+  "search_method": "a*",
   "max_tree_depth": 10000,
-  "heuristic": "manhattan"
+  "heuristic": "hungarian"
 }

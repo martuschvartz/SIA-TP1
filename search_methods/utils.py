@@ -1,23 +1,15 @@
-from pathlib import Path
-import json
 from typing import TYPE_CHECKING
 
 from search_methods.heuristics import Heuristics
+from search_methods.settings import Settings
 from sokoban_engine import BoardSnapshot
 
 if TYPE_CHECKING:
     from search_methods.node import TreeNode
 
 
-CONFIG_PATH = Path(__file__).with_name("config.json")
-with CONFIG_PATH.open() as f:
-    config = json.load(f)
-
-search_method = config["search_method"]
-max_tree_depth = config["max_tree_depth"]
-
-
 def get_priority(node: "TreeNode", snapshot: BoardSnapshot) -> int | tuple[int, int]:
+    search_method = Settings.get_search_method()
     if search_method == "dfs":
         return -node.level
 
@@ -36,3 +28,7 @@ def get_priority(node: "TreeNode", snapshot: BoardSnapshot) -> int | tuple[int, 
     raise ValueError(
         f"[ERROR]: '{search_method}' no es un metodo de busqueda valido. Use: bfs, dfs, greedy o a*"
     )
+
+
+# Kept for compatibility; not used by TreeNode in current code.
+max_tree_depth = Settings.get_max_tree_depth()

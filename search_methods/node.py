@@ -1,10 +1,6 @@
 import copy
-from time import sleep
 from typing import List, Optional
 
-import search_methods
-from search_methods.utils import max_tree_depth
-# from search_methods.SearchMethod import SearchMethod
 from sokoban_engine import BoardState, Board, Direction, MoveResult
 
 
