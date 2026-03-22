@@ -22,6 +22,8 @@ class TreeNode:
         self.is_goal = is_goal
         self.action_direction = action_direction
 
+    def __lt__(self, other: "TreeNode") -> bool:
+        return self.level < other.level
 
     def expand(self) -> List['TreeNode']:
         if  self.board.is_in_deadlock(self.state):

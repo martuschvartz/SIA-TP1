@@ -1,6 +1,7 @@
+import heapq
 from search_methods.node import TreeNode
 from typing import List
-from search_methods.utils import sort_method
+from search_methods.utils import get_priority
 from sokoban_engine import BoardState, Board, Direction
 
 
@@ -20,10 +21,10 @@ class Tree:
         self._snapshot = board.get_snapshot()
         #nodo raiz
         self.root = TreeNode(init_state, board, 0, init_state.is_solved(),0,None,None)
-        self.known_states : set[tuple[tuple[int, int], frozenset[tuple[int, int]]]] = set()
+        self.known_states: dict[tuple[tuple[int, int], frozenset[tuple[int, int]]], int] = {}
 
-        # lista de nodos frontera
-        self.frontLineNodes:List[TreeNode] = []
+        # lista de nodos frontera (min-heap de (prioridad, nodo))
+        self.frontLineNodes: list[tuple[int | tuple[int, int], TreeNode]] = []
         # lista de nodos explorados.
         # TODO: maybe esto puede ser un Set
         self.exploredNodes : List[TreeNode] = []
@@ -34,21 +35,33 @@ class Tree:
 
 
     def start_searching(self)->List[Direction]|None:
-        self.frontLineNodes.append(self.root)
+        self.known_states = {self.root.state.key(): self.root.cost}
+        self.frontLineNodes = []
+        heapq.heappush(
+            self.frontLineNodes,
+            (get_priority(self.root, self._snapshot), self.root),
+        )
         while len(self.frontLineNodes) > 0:
-            node = self.frontLineNodes.pop(0)
+            _priority, node = heapq.heappop(self.frontLineNodes)
+
+            # Esto permite de vuelta, evitar estar en el mismo estado con mayor costo.
+            if node.cost > self.known_states.get(node.state.key(), float("inf")):
+                continue
 
             if node.get_is_goal():
                 return list(reversed(get_solution_path(node)))
 
             self.exploredNodes.append(node)
-            if node.state.key() not in self.known_states:
-                self.known_states.add(node.state.key())
-                list_node = node.expand()
-                for child in list_node:
-                    self.frontLineNodes.append(child)
-                    # todos los nodos ya tienen sus hijos guardados. No hace falta aca.
-            self.frontLineNodes = sort_method(self.frontLineNodes, self._snapshot)
+            list_node = node.expand()
+            # Con esto podes evitar hijos con el mismo estado con mayor costo.
+            for child in list_node:
+                k = child.state.key()
+                if k not in self.known_states or child.cost < self.known_states[k]:
+                    self.known_states[k] = child.cost
+                    heapq.heappush(
+                        self.frontLineNodes,
+                        (get_priority(child, self._snapshot), child),
+                    )
 
         # Si llega aca, es porque no existe una solucion alcanzable.
         return None

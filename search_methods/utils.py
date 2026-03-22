@@ -1,6 +1,6 @@
 from pathlib import Path
 import json
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from search_methods.heuristics import Heuristics
 from sokoban_engine import BoardSnapshot
@@ -17,28 +17,21 @@ search_method = config["search_method"]
 max_tree_depth = config["max_tree_depth"]
 
 
-def sort_method(node_list: List["TreeNode"], snapshot: BoardSnapshot) -> List["TreeNode"]:
-    #Programación defensiva B)
-    if not node_list:
-        return node_list
-
+def get_priority(node: "TreeNode", snapshot: BoardSnapshot) -> int | tuple[int, int]:
     if search_method == "dfs":
-        return sorted(node_list, key=lambda node: node.level, reverse=True)
+        return -node.level
 
-    elif search_method == "bfs":
-        return sorted(node_list, key=lambda node: node.level)
+    if search_method == "bfs":
+        return node.level
 
-    elif search_method == "a*":
-        return sorted(
-            node_list,
-            key=lambda n: (n.cost + Heuristics.apply_heuristic(n.state, snapshot), n.level),
+    if search_method == "a*":
+        return (
+            node.cost + Heuristics.apply_heuristic(node.state, snapshot),
+            node.level,
         )
 
-    elif search_method == "greedy":
-        return sorted(
-            node_list,
-            key=lambda n: (Heuristics.apply_heuristic(n.state, snapshot), n.level),
-        )
+    if search_method == "greedy":
+        return (Heuristics.apply_heuristic(node.state, snapshot), node.level)
 
     raise ValueError(
         f"[ERROR]: '{search_method}' no es un metodo de busqueda valido. Use: bfs, dfs, greedy o a*"

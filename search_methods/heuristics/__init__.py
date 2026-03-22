@@ -6,33 +6,18 @@ from typing import Callable
 
 from sokoban_engine import BoardSnapshot, BoardState
 
-CONFIG_PATH = Path(__file__).with_name("config.json")
+from search_methods.heuristics.Hungarian import hungarian
+from search_methods.heuristics.Manhattan import nearest_goal_per_box, zero
+
+CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.json"
 with CONFIG_PATH.open() as f:
     _config = json.load(f)
 
-
-def _manhattan(a: tuple[int, int], b: tuple[int, int]) -> int:
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
-
-def _zero(_state: BoardState, _goals: frozenset[tuple[int, int]]) -> int:
-    return 0
-
-
-def _nearest_goal_per_box(state: BoardState, goals: frozenset[tuple[int, int]]) -> int:
-    if not goals:
-        return 0
-    total = 0
-    for box_pos in state.get_boxes_positions():
-        if box_pos in goals:
-            continue
-        total += min(_manhattan(box_pos, g) for g in goals)
-    return total
-
-
 _HEURISTIC_REGISTRY: dict[str, Callable[[BoardState, frozenset[tuple[int, int]]], int]] = {
-    "zero": _zero,
-    "nearest_goal_per_box": _nearest_goal_per_box,
+    "zero": zero,
+    "nearest_goal_per_box": nearest_goal_per_box,
+    "manhattan": nearest_goal_per_box,
+    "hungarian": hungarian,
 }
 
 _HEURISTIC_KEY: str = _config.get("heuristic", "nearest_goal_per_box")

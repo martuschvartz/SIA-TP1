@@ -1,5 +1,5 @@
 {
-  "search_method": "greedy",
+  "search_method": "bfs",
   "max_tree_depth": 10000,
-  "heuristic": "nearest_goal_per_box"
+  "heuristic": "manhattan"
 }
