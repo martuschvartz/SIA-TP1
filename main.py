@@ -134,7 +134,7 @@ def _run_ai(board: Board, level_name: str, with_replay: bool) -> None:
         print("No reachable solution found.")
         return
 
-    print(f"Solution found with {len(solution)} moves.")
+    print(f"Solution found with {len(solution)} moves in {elapsed_seconds:.4f} seconds.")
     if with_replay: run_ai_replay(board, solution)
 
 
