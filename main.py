@@ -14,6 +14,7 @@ from time import perf_counter
 
 from search_methods.settings import Settings
 from search_methods.tree import Tree
+from search_run_record import SearchRunLogger, SearchRunRecord
 from sokoban_engine import Board
 
 from sokoban_pygame import run_ai_replay, run_player
@@ -88,6 +89,23 @@ def _run_ai(board: Board) -> None:
     result_str = "success" if success else "failure"
     solution_cost = tree.solution_cost if success else "N/A"
     solution_path = " -> ".join(move.name for move in solution) if success else "Not found"
+
+    logger = SearchRunLogger(_REPO_ROOT / "search_runs.csv")
+    heuristic_name = Settings.get_heuristic() if Settings.get_search_method() in ("a*", "greedy") else "None"
+    logger.append(
+        SearchRunRecord(
+            search_method=Settings.get_search_method(),
+            heuristic=heuristic_name,
+            result=result_str,
+            solution_cost=solution_cost,
+            expanded_nodes=tree.expanded_nodes_count,
+            frontier_nodes_pending=tree.frontier_nodes_remaining,
+            frontier_nodes_inserted=tree.frontier_nodes_count,
+            solution_path=solution_path,
+            processing_time_seconds=round(elapsed_seconds, 6),
+        )
+    )
+
 
     stats_lines = [
         "=== Search statistics ===",
