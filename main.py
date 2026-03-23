@@ -93,9 +93,15 @@ def _run_ai(board: Board, level_name: str, with_replay: bool) -> None:
     elapsed_seconds = perf_counter() - start_time
 
     success = solution is not None
-    result_str = "success" if success else "failure"
+    timed_out = tree.timed_out
+    result_str = "success" if success else ("timeout" if timed_out else "failure")
     solution_cost = tree.solution_cost if success else "N/A"
-    solution_path = " -> ".join(move.name for move in solution) if success else "Not found"
+    if success:
+        solution_path = " -> ".join(move.name for move in solution)
+    elif timed_out:
+        solution_path = "Timeout reached"
+    else:
+        solution_path = "Not found"
 
     logger = SearchRunLogger(_REPO_ROOT / "search_runs.csv")
     heuristic_name = Settings.get_heuristic() if Settings.get_search_method() in ("a*", "greedy") else "None"
@@ -117,6 +123,7 @@ def _run_ai(board: Board, level_name: str, with_replay: bool) -> None:
     stats_lines = [
         "=== Search statistics ===",
         f"Result: {result_str}",
+        f"Timeout limit: {Settings.get_search_timeout_seconds():.0f} seconds",
         f"Solution cost: {solution_cost}",
         f"Expanded nodes: {tree.expanded_nodes_count}",
         (
@@ -131,7 +138,12 @@ def _run_ai(board: Board, level_name: str, with_replay: bool) -> None:
     output_file.write_text("\n".join(stats_lines) + "\n", encoding="utf-8")
 
     if solution is None:
-        print("No reachable solution found.")
+        if timed_out:
+            print(
+                f"Search stopped after timeout ({Settings.get_search_timeout_seconds():.0f} seconds)."
+            )
+        else:
+            print("No reachable solution found.")
         return
 
     print(f"Solution found with {len(solution)} moves in {elapsed_seconds:.4f} seconds.")

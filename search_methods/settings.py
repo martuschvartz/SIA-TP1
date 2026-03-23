@@ -12,6 +12,7 @@ class _Settings:
         self._search_method: str = "a*"
         self._max_tree_depth: int = 10_000
         self._heuristic: str = "nearest_goal_per_box"
+        self._search_timeout_seconds: float = 120.0
 
 
     def load(self, path: Path | None = None) -> None:
@@ -22,6 +23,7 @@ class _Settings:
         self._max_tree_depth = int(data["max_tree_depth"])
 
         self._heuristic = str(data.get("heuristic", "nearest_goal_per_box"))
+        self._search_timeout_seconds = float(data.get("search_timeout_seconds", 120))
         heuristics_mod = importlib.import_module("search_methods.heuristics")
         heuristics_mod.validate_heuristic_name(self._heuristic)
 
@@ -30,6 +32,7 @@ class _Settings:
         *,
         search_method: str | None = None,
         heuristic: str | None = None,
+        search_timeout_seconds: float | None = None,
     ) -> None:
         if search_method is not None:
             self._search_method = search_method
@@ -37,6 +40,8 @@ class _Settings:
             heuristics_mod = importlib.import_module("search_methods.heuristics")
             heuristics_mod.validate_heuristic_name(heuristic)
             self._heuristic = heuristic
+        if search_timeout_seconds is not None:
+            self._search_timeout_seconds = float(search_timeout_seconds)
 
     def get_search_method(self) -> str:
         return self._search_method
@@ -46,6 +51,9 @@ class _Settings:
 
     def get_max_tree_depth(self) -> int:
         return self._max_tree_depth
+
+    def get_search_timeout_seconds(self) -> float:
+        return self._search_timeout_seconds
 
 
 

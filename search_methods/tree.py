@@ -1,6 +1,8 @@
 import heapq
+from time import perf_counter
 from search_methods.node import TreeNode
 from typing import List
+from search_methods.settings import Settings
 from search_methods.utils import get_priority
 from sokoban_engine import BoardState, Board, Direction
 
@@ -31,6 +33,7 @@ class Tree:
         self.solution_path : List[Direction] = []
         self.solution_cost: int | None = None
         self.result_success: bool = False
+        self.timed_out: bool = False
 
         self.expanded_nodes_count: int = 0
         self.frontier_nodes_count: int = 0
@@ -44,10 +47,13 @@ class Tree:
         self.solution_path = []
         self.solution_cost = None
         self.result_success = False
+        self.timed_out = False
         self.expanded_nodes_count = 0
         self.frontier_nodes_count = 0
         self.frontier_nodes_remaining = 0
         self.max_frontier_nodes_count = 0
+        timeout_seconds = Settings.get_search_timeout_seconds()
+        start_time = perf_counter()
 
         heapq.heappush(
             self.frontLineNodes,
@@ -57,6 +63,11 @@ class Tree:
         self.max_frontier_nodes_count = max(self.max_frontier_nodes_count, len(self.frontLineNodes))
 
         while len(self.frontLineNodes) > 0:
+            if perf_counter() - start_time >= timeout_seconds:
+                self.timed_out = True
+                self.frontier_nodes_remaining = len(self.frontLineNodes)
+                return None
+
             _priority, node = heapq.heappop(self.frontLineNodes)
 
             # Esto permite de vuelta, evitar estar en el mismo estado con mayor costo.

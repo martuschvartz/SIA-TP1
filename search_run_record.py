@@ -11,7 +11,7 @@ class SearchRunRecord:
     search_method: str
     heuristic: str # Heuristic name or "None" for uninformed method
     level_name: str
-    result: str  # "success" or "failure"
+    result: str  # "success", "failure", or "timeout"
     solution_cost: int | str
     expanded_nodes: int # counts total expanded nodes
     frontier_nodes_pending: int #counts nodes inserted into the frontier, not yet expanded when the solution was found

@@ -1,5 +1,6 @@
 {
   "search_method": "a*",
   "max_tree_depth": 10000,
-  "heuristic": "hungarian"
+  "heuristic": "hungarian",
+  "search_timeout_seconds": 120
 }

@@ -30,6 +30,8 @@ Los valores por defecto salen de **`search_methods/config.json`**. Si pasás un 
 | `--map` / `--level` | Ruta al archivo de nivel. Si no se pasa, se usa `resources/maps/default.txt`. |
 | `--config` | Ruta a un JSON con la misma forma que `config.json` (reemplaza la carga inicial por defecto de ese archivo). |
 
+Además, `search_methods/config.json` admite `search_timeout_seconds` (default: `120`) para cortar búsquedas largas.
+
 ### Mapas (`resources/maps/`)
 
 - Los niveles son archivos **`.txt`** en texto plano, multilínea, con el mismo formato de caracteres que la tabla de más abajo.
