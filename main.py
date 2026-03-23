@@ -20,7 +20,7 @@ from sokoban_engine import Board
 from sokoban_pygame import run_ai_replay, run_player
 
 _REPO_ROOT = Path(__file__).resolve().parent
-_DEFAULT_MAP = _REPO_ROOT / "resources" / "maps" / "LEVEL1.txt"
+_DEFAULT_MAP = _REPO_ROOT / "resources" / "maps" / "LEVEL1-Easy.txt"
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
