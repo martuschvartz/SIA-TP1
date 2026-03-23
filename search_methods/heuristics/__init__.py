@@ -6,12 +6,14 @@ from sokoban_engine import BoardSnapshot, BoardState
 
 from search_methods.heuristics.Hungarian import hungarian
 from search_methods.heuristics.Manhattan import nearest_goal_per_box, zero
+from search_methods.heuristics.mixed import mixed
 
 _HEURISTIC_REGISTRY: dict[str, Callable[[BoardState, frozenset[tuple[int, int]]], int]] = {
     "zero": zero,
     "nearest_goal_per_box": nearest_goal_per_box,
-    "manhattan": nearest_goal_per_box,
+    "manhattan": nearest_goal_per_box, # manhattan?
     "hungarian": hungarian,
+    "mixed": mixed
 }
 
 

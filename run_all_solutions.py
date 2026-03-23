@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 SEARCH_METHODS = ("bfs", "dfs", "greedy", "a*")
-HEURISTICS = ("nearest_goal_per_box", "manhattan", "hungarian")
+HEURISTICS = ("nearest_goal_per_box", "manhattan", "hungarian", "mixed")
 INFORMED_METHODS = {"greedy", "a*"}
 
 
