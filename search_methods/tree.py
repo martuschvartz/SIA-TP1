@@ -11,6 +11,8 @@ from sokoban_engine import Board, BoardState, Direction
 # Frontier during search: heap-backed list, DFS stack, or BFS queue
 _Frontier = list[tuple[int | tuple[int, int], TreeNode]] | list[TreeNode] | Deque[TreeNode]
 
+_StateKey = tuple[tuple[int, int], frozenset[tuple[int, int]]]
+
 
 def get_solution_path(goal_node: TreeNode) -> List[Direction]:
     current_node = goal_node
@@ -25,7 +27,7 @@ class Tree:
     def __init__(self, board: Board, init_state: BoardState):
         self._snapshot = board.get_snapshot()
         self.root = TreeNode(init_state, board, 0, init_state.is_solved(), 0, None, None)
-        self.known_states: dict[tuple[tuple[int, int], frozenset[tuple[int, int]]], int] = {}
+        self.known_states: dict[_StateKey, int] = {}
 
         self.solution_path: List[Direction] = []
         self.solution_cost: int | None = None
@@ -40,9 +42,9 @@ class Tree:
         # Set during start_searching only; used by main.py on MemoryError to clear frontier.
         self._frontier: _Frontier | None = None
 
-    def _make_frontier(self, search_method: str, root: TreeNode) -> _Frontier:
+    def _make_frontier(self, is_informed: bool, search_method: str, root: TreeNode) -> _Frontier:
         """Build the frontier with root already inside."""
-        if search_method in ("a*", "greedy"):
+        if is_informed:
             f: list[tuple[int | tuple[int, int], TreeNode]] = []
             heapq.heappush(f, (get_priority(root, self._snapshot), root))
             return f
@@ -50,24 +52,35 @@ class Tree:
             return [root]
         return deque([root])
 
-    def _frontier_pop(self, frontier: _Frontier, search_method: str) -> TreeNode:
+    def _frontier_pop(self, frontier: _Frontier, is_informed: bool, search_method: str) -> TreeNode:
         """Pop the next node according to the search strategy."""
-        if search_method in ("a*", "greedy"):
+        if is_informed:
             _priority, node = heapq.heappop(frontier)  # type: ignore[arg-type]
             return node
         if search_method == "dfs":
             return frontier.pop()  # type: ignore[union-attr]
         return frontier.popleft()  # type: ignore[union-attr]
 
-    def _frontier_push(self, frontier: _Frontier, child: TreeNode, search_method: str) -> None:
+    def _frontier_push(self, frontier: _Frontier, child: TreeNode, is_informed: bool) -> None:
         """Push a child onto the frontier."""
-        if search_method in ("a*", "greedy"):
+        if is_informed:
             heapq.heappush(frontier, (get_priority(child, self._snapshot), child))  # type: ignore[arg-type]
         else:
             frontier.append(child)  # type: ignore[union-attr]
 
+    def _should_visit(self, child: TreeNode, is_informed: bool, visited: set[_StateKey]) -> bool:
+        k = child.state.key()
+        if not is_informed:
+            if k in visited:
+                return False
+            visited.add(k)
+            return True
+        if k not in self.known_states or child.cost < self.known_states[k]:
+            self.known_states[k] = child.cost
+            return True
+        return False
+
     def start_searching(self) -> List[Direction] | None:
-        self.known_states = {self.root.state.key(): self.root.cost}
         self.solution_path = []
         self.solution_cost = None
         self.result_success = False
@@ -78,11 +91,21 @@ class Tree:
         self.max_frontier_nodes_count = 0
 
         search_method = Settings.get_search_method()
+        is_informed = search_method in ("a*", "greedy")
+
+        visited: set[_StateKey] = set()
+        self.known_states = {}
+        root_key = self.root.state.key()
+        if is_informed:
+            self.known_states[root_key] = self.root.cost
+        else:
+            visited.add(root_key)
+
         max_depth = Settings.get_max_tree_depth()
         timeout_seconds = Settings.get_search_timeout_seconds()
         start_time = perf_counter()
 
-        frontier = self._make_frontier(search_method, self.root)
+        frontier = self._make_frontier(is_informed, search_method, self.root)
         self._frontier = frontier
         self.frontier_nodes_count = 1
         self.max_frontier_nodes_count = 1
@@ -94,9 +117,9 @@ class Tree:
                     self.frontier_nodes_remaining = len(frontier)
                     return None
 
-                node = self._frontier_pop(frontier, search_method)
+                node = self._frontier_pop(frontier, is_informed, search_method)
 
-                if node.cost > self.known_states.get(node.state.key(), float("inf")):
+                if is_informed and node.cost > self.known_states.get(node.state.key(), float("inf")):
                     continue
 
                 if node.get_is_goal():
@@ -111,10 +134,8 @@ class Tree:
 
                 self.expanded_nodes_count += 1
                 for child in node.expand():
-                    k = child.state.key()
-                    if k not in self.known_states or child.cost < self.known_states[k]:
-                        self.known_states[k] = child.cost
-                        self._frontier_push(frontier, child, search_method)
+                    if self._should_visit(child, is_informed, visited):
+                        self._frontier_push(frontier, child, is_informed)
                         self.frontier_nodes_count += 1
 
                 self.max_frontier_nodes_count = max(
