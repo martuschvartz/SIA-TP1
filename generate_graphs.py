@@ -7,7 +7,7 @@ CSV_FILE = "search_runs.csv"
 CHARTS_FOLDER = "results_charts"
 
 os.makedirs(CHARTS_FOLDER, exist_ok=True)
-TIMEOUT_SECONDS = 120
+TIMEOUT_SECONDS = 1200
 
 
 def load_and_clean_data(filepath):

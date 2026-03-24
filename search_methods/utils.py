@@ -18,12 +18,14 @@ def get_priority(node: "TreeNode", snapshot: BoardSnapshot) -> int | tuple[int, 
 
     if search_method == "a*":
         return (
+            # f() = g() + h()
             node.cost + Heuristics.apply_heuristic(node.state, snapshot),
-            node.level,
+            # h()
+            Heuristics.apply_heuristic(node.state, snapshot),
         )
 
     if search_method == "greedy":
-        return (Heuristics.apply_heuristic(node.state, snapshot), node.level)
+        return Heuristics.apply_heuristic(node.state, snapshot), node.level
 
     raise ValueError(
         f"[ERROR]: '{search_method}' no es un metodo de busqueda valido. Use: bfs, dfs, greedy o a*"
