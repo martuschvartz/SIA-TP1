@@ -175,7 +175,10 @@ if __name__ == "__main__":
     else:
         df_results = load_and_clean_data(CSV_FILE)
 
-        levels_to_plot = ['LEVEL1', 'LEVEL3']
+        levels_to_plot = [
+            'LEVEL1',
+            'LEVEL3'
+        ]
         for level in levels_to_plot:
             plot_metrics_per_level(df_results, level)
 
