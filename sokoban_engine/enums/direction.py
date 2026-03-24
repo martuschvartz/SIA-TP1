@@ -3,7 +3,6 @@ Direction enum — movement deltas for the Sokoban game.
 """
 
 from enum import Enum
-from math import trunc
 
 
 class Direction(Enum):

@@ -88,20 +88,36 @@ def _load_level_text(args: argparse.Namespace) -> tuple[str, str]:
 def _run_ai(board: Board, level_name: str, with_replay: bool) -> None:
     initial_state = deepcopy(board.initial_state)
     tree = Tree(board, initial_state)
+    is_oom = False
     start_time = perf_counter()
-    solution = tree.start_searching()
+    solution = None
+
+    try:
+        solution = tree.start_searching()
+    except MemoryError:
+        is_oom = True
+        tree.frontier_nodes_remaining = len(tree.frontLineNodes)
+        tree.frontLineNodes.clear()
+        tree.known_states.clear()
+
     elapsed_seconds = perf_counter() - start_time
 
     success = solution is not None
     timed_out = tree.timed_out
-    result_str = "success" if success else ("timeout" if timed_out else "failure")
+
     solution_cost = tree.solution_cost if success else "N/A"
     if success:
         solution_path = " -> ".join(move.name for move in solution)
+        result_str = "success"
     elif timed_out:
         solution_path = "Timeout reached"
+        result_str = "timeout"
+    elif is_oom:
+        solution_path = "OOM reached"
+        result_str = "oom"
     else:
         solution_path = "Not found"
+        result_str = "failure"
 
     logger = SearchRunLogger(_REPO_ROOT / "search_runs.csv")
     heuristic_name = Settings.get_heuristic() if Settings.get_search_method() in ("a*", "greedy") else "None"

@@ -133,7 +133,7 @@ class Board:
 
         return legal
 
-    def can_move_box_to_dir(self, state: BoardState, position: tuple[int,int]) -> list[Direction]:
+    def legal_directions(self, position: tuple[int,int]) -> list[Direction]:
         """
         returns possible box movements given a current position.
         used to determine whether a box can be moved in a given direction, which is useful
@@ -152,7 +152,7 @@ class Board:
 
     def is_in_deadlock(self, state: BoardState) -> bool:
         for box in state.boxes:
-            legal_directions = self.can_move_box_to_dir(state,box.position)
+            legal_directions = self.legal_directions(box.position)
             if box.on_goal:
                 continue
             if len(legal_directions) < 2:
@@ -187,13 +187,6 @@ class Board:
 
         return MoveResult.WIN if state.is_solved() else MoveResult.SUCCESS
 
-    # def get_state(self) -> BoardState:
-    #     """Returns an immutable, hashable snapshot of the current board state."""
-    #     return BoardState(
-    #         player_pos=self._player.position,
-    #         box_positions=frozenset(b.position for b in self._boxes),
-    #     )
-    #
     def get_snapshot(self) -> BoardSnapshot:
         """
         Returns the static description of the level: walls, goals, and bounds.

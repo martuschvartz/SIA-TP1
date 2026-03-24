@@ -34,15 +34,3 @@ class BoardSnapshot:
     def boxes_on_goals(self, state: BoardState) -> frozenset[tuple[int, int]]:
         """Returns the positions of boxes currently resting on a goal."""
         return state.get_boxes_positions() & self.goals
-
-    def boxes_off_goals(self, state: BoardState) -> frozenset[tuple[int, int]]:
-        """Returns the positions of boxes NOT on any goal."""
-        return state.get_boxes_positions() - self.goals
-
-    def is_solved(self, state: BoardState) -> bool:
-        """Returns True if every box in state is on a goal tile."""
-        return state.boxes <= self.goals
-
-    def goals_without_box(self, state: BoardState) -> frozenset[tuple[int, int]]:
-        """Returns goal positions that still have no box on them."""
-        return self.goals - state.get_boxes_positions()

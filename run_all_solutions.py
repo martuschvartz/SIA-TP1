@@ -79,22 +79,26 @@ def run_all(
             f"[{i}/{len(combos)}] level={level.name} method={method} heuristic={h_text}"
         )
 
-        cmd = build_command(
-            python_exec=sys.executable,
-            main_py=main_py,
-            level_path=level,
-            search_method=method,
-            heuristic=heuristic,
-            replay=replay,
-        )
+        runs = 5 # for now
 
-        result = subprocess.run(cmd, cwd=project_root)
-        if result.returncode != 0:
-            failures += 1
-            print(f"  -> failed with exit code {result.returncode}")
-            if not continue_on_error:
-                print("Stopping at first failure. Use --continue-on-error to keep going.")
-                return result.returncode
+        for run in range(runs):
+            print(f"  -> Executing {run+1}/{runs}")
+            cmd = build_command(
+                python_exec=sys.executable,
+                main_py=main_py,
+                level_path=level,
+                search_method=method,
+                heuristic=heuristic,
+                replay=replay,
+            )
+
+            result = subprocess.run(cmd, cwd=project_root)
+            if result.returncode != 0:
+                failures += 1
+                print(f"  -> failed with exit code {result.returncode}")
+                if not continue_on_error:
+                    print("Stopping at first failure. Use --continue-on-error to keep going.")
+                    return result.returncode
 
     print("\nDone.")
     print(f"Successful runs: {len(combos) - failures}")
