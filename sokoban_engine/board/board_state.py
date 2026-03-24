@@ -25,6 +25,13 @@ class BoardState:
         self._boxes = boxes
         self._boxes_positions = frozenset(b.position for b in self.boxes)
 
+    def copy(self) -> "BoardState":
+        """Shallow structural copy: new Player and Box instances (safe before Board.move)."""
+        return BoardState(
+            Player(self._player.position),
+            {Box(b.position, b.on_goal) for b in self._boxes},
+        )
+
     def is_solved(self) -> bool:
         for box in self._boxes:
             if not box.on_goal:

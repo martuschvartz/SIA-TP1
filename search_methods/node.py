@@ -1,4 +1,3 @@
-import copy
 from typing import List, Optional
 
 from sokoban_engine import BoardState, Board, Direction, MoveResult
@@ -26,7 +25,7 @@ class TreeNode:
             return self.children
 
         for direction in self.possible_actions:
-            new_state = copy.deepcopy(self.state)
+            new_state = self.state.copy()
             move_result = self.board.move(direction, new_state) == MoveResult.WIN
             new_node = TreeNode(new_state, self.board, self.cost + 1, move_result, self.level+1, direction, self)
             self.children.append(new_node)
