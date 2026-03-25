@@ -99,8 +99,7 @@ def _run_ai(board: Board, level_name: str, with_replay: bool) -> None:
         f = getattr(tree, "_frontier", None)
         tree.frontier_nodes_remaining = len(f) if f is not None else 0
         if f is not None:
-            f.clear()
-        tree.known_states.clear()
+            f.clear()  # strategy.clear() frees both the frontier and its internal tracking
 
     elapsed_seconds = perf_counter() - start_time
 
