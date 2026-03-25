@@ -7,14 +7,13 @@ from sokoban_engine import BoardSnapshot
 if TYPE_CHECKING:
     from search_methods.node import TreeNode
 
-
 def get_priority(node: "TreeNode", snapshot: BoardSnapshot) -> tuple[int, int]:
     """Priority tuple for the min-heap (A* and greedy only)."""
     search_method = Settings.get_search_method()
 
     if search_method == "a*":
         h = Heuristics.apply_heuristic(node.state, snapshot)
-        return (node.cost + h, h)
+        return node.cost + h, h
 
     if search_method == "greedy":
         return (
