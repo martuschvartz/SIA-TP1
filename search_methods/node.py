@@ -18,7 +18,11 @@ class TreeNode:
         self.action_direction = action_direction
 
     def __lt__(self, other: "TreeNode") -> bool:
-        return self.level < other.level
+        # Tertiary heap tiebreaker (fires only when the full priority tuple is equal).
+        # A*: primary=f, secondary=h — both encoded in the heap tuple by get_priority().
+        # Greedy: primary=h, secondary=level — also encoded in the heap tuple.
+        # cost is the semantically correct fallback for A* (cost == level for unit-step costs).
+        return self.cost < other.cost
 
     def expand(self) -> List['TreeNode']:
         if  self.board.is_in_deadlock(self.state):
