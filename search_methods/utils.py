@@ -9,7 +9,12 @@ if TYPE_CHECKING:
 
 
 def get_priority(node: "TreeNode", snapshot: BoardSnapshot) -> tuple[int, int]:
-    """Priority tuple for the min-heap (A* and greedy only)."""
+    """Priority tuple for the min-heap (A* and greedy only).
+
+    A*:     (f, h)      — primary: f = g + h; tiebreaker: h (prefer node closer to goal).
+    Greedy: (h, level)  — primary: h;          tiebreaker: level (prefer shallower node).
+    If the full tuple ties, TreeNode.__lt__ (cost) is the last-resort tiebreaker.
+    """
     search_method = Settings.get_search_method()
 
     if search_method == "a*":

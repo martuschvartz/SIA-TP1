@@ -182,6 +182,7 @@ class Board:
                 return MoveResult.ILLEGAL
             box.position = new_box_pos
             box.on_goal = new_box_pos in self._goals
+            state._boxes_positions = frozenset(b.position for b in state.boxes)
 
         state.player.position = new_player_pos
 

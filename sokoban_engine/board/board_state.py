@@ -39,7 +39,7 @@ class BoardState:
         return True
 
     def get_boxes_positions(self) -> frozenset[tuple[int, int]]:
-        return frozenset(b.position for b in self.boxes)
+        return self._boxes_positions
 
 
 
@@ -48,7 +48,7 @@ class BoardState:
         used for hashing and equal purposes, since using a hash or equals function over mutable
         objects is unsafe
         """
-        return self.player.position, frozenset(b.position for b in self.boxes)
+        return self.player.position, self._boxes_positions
 
     @property
     def player(self) -> Player:
