@@ -49,6 +49,7 @@ class Board:
         self._boxes: list[Box] = []
         self._initial_state: BoardState
         self._parse_level(level)
+        self._static_deadlocks = self._compute_static_deadlocks()
 
     def _parse_level(self, level: str) -> None:
         """Parse the level string and populate the board."""
@@ -81,15 +82,28 @@ class Board:
         self._boxes = [Box(pos, pos in self._goals) for pos in box_positions]
         self._initial_state = BoardState(Player(player_pos), set(self._boxes))
 
-    # @property
-    # def player(self) -> Player:
-    #     """The player object (read-only)."""
-    #     return self._player
-    #
-    # @property
-    # def boxes(self) -> list[Box]:
-    #     """List of box objects (read-only)."""
-    #     return self._boxes
+    def _compute_static_deadlocks(self) -> set[tuple[int, int]]:
+        """Finds all the empty corners where a box would get stuck forever."""
+        deadlocks = set()
+
+        # Get board boundaries
+        max_x = max(x for x, y in self._walls) if self._walls else 0
+        max_y = max(y for x, y in self._walls) if self._walls else 0
+
+        for y in range(max_y + 1):
+            for x in range(max_x + 1):
+                pos = (x, y)
+
+                if pos in self._walls or pos in self._goals:
+                    continue
+
+                wall_vert = (x, y - 1) in self._walls or (x, y + 1) in self._walls
+                wall_horiz = (x - 1, y) in self._walls or (x + 1, y) in self._walls
+
+                if wall_vert and wall_horiz:
+                    deadlocks.add(pos)
+
+        return deadlocks
 
     @property
     def initial_state(self) -> BoardState:
@@ -151,13 +165,9 @@ class Board:
         return legal
 
     def is_in_deadlock(self, state: BoardState) -> bool:
+        """Instantly checks if any box is in a deadly corner."""
         for box in state.boxes:
-            legal_directions = self.legal_directions(box.position)
-            if box.on_goal:
-                continue
-            if len(legal_directions) < 2:
-                return True
-            if len(legal_directions) == 2 and not Direction.can_move_box(legal_directions[0], legal_directions[1]):
+            if not box.on_goal and box.position in self._static_deadlocks:
                 return True
         return False
 
