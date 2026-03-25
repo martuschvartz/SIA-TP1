@@ -21,26 +21,15 @@ class TreeNode:
         return self.level < other.level
 
     def expand(self) -> List['TreeNode']:
+        if  self.board.is_in_deadlock(self.state):
+            return self.children
+
         for direction in self.possible_actions:
             new_state = self.state.copy()
-
-            # 1. Let the engine handle all the math and movement
-            move_result = self.board.move(direction, new_state)
-
-            # 2. Find out which box moved using pure Set difference! (No math required)
-            moved_boxes = new_state.get_boxes_positions() - self.state.get_boxes_positions()
-
-            # next(iter(...)) gets the single item from the set, or None if the set is empty
-            pushed_box_pos = next(iter(moved_boxes), None)
-
-            # 3. Check for deadlock efficiently!
-            if not self.board.is_in_deadlock(new_state, pushed_box_pos):
-                is_win = (move_result == MoveResult.WIN)
-                new_node = TreeNode(new_state, self.board, self.cost + 1, is_win, self.level + 1, direction, self)
-                self.children.append(new_node)
-
+            move_result = self.board.move(direction, new_state) == MoveResult.WIN
+            new_node = TreeNode(new_state, self.board, self.cost + 1, move_result, self.level+1, direction, self)
+            self.children.append(new_node)
         return self.children
-
 
     def get_children(self) -> List['TreeNode']:
         return self.children
