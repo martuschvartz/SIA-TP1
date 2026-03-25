@@ -11,6 +11,8 @@ from sokoban_engine import Board, BoardState, Direction
 # Frontier during search: heap-backed list, DFS stack, or BFS queue
 _Frontier = list[tuple[int | tuple[int, int], TreeNode]] | list[TreeNode] | Deque[TreeNode]
 
+_StateKey = tuple[tuple[int, int], frozenset[tuple[int, int]]]
+
 
 def get_solution_path(goal_node: TreeNode) -> List[Direction]:
     current_node = goal_node
@@ -25,7 +27,7 @@ class Tree:
     def __init__(self, board: Board, init_state: BoardState):
         self._snapshot = board.get_snapshot()
         self.root = TreeNode(init_state, board, 0, init_state.is_solved(), 0, None, None)
-        self.known_states: dict[tuple[tuple[int, int], frozenset[tuple[int, int]]], int] = {}
+        self.known_states: dict[_StateKey, int] = {}
 
         self.solution_path: List[Direction] = []
         self.solution_cost: int | None = None
@@ -82,7 +84,6 @@ class Tree:
         return True
 
     def start_searching(self) -> List[Direction] | None:
-        self.known_states = {self.root.state.key(): self.root.cost}
         self.solution_path = []
         self.solution_cost = None
         self.result_success = False
