@@ -128,6 +128,11 @@ class Board:
         legal: list[Direction] = []
         px, py = state.player.position
 
+        # Fix 3: guardamos el frozenset de posiciones de cajas en una variable local
+        # para hacer lookups O(1) en vez de llamar a get_box_at() que recorre todas
+        # las cajas linealmente (O(n)) en cada dirección.
+        box_positions = state.get_boxes_positions()
+
         for direction in Direction:
             dx, dy = direction.delta
             new_player_pos = (px + dx, py + dy)
@@ -135,12 +140,12 @@ class Board:
             if new_player_pos in self._walls:
                 continue
 
-            box = Board.get_box_at(new_player_pos, state)
-            if box is not None:
+            if new_player_pos in box_positions:
+                # Hay una caja adelante: verificamos que la celda detrás no sea pared ni caja.
                 new_box_pos = (new_player_pos[0] + dx, new_player_pos[1] + dy)
                 if new_box_pos in self._walls:
                     continue
-                if Board.get_box_at(new_box_pos, state) is not None:
+                if new_box_pos in box_positions:
                     continue
 
             legal.append(direction)

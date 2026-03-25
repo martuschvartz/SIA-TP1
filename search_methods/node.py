@@ -9,13 +9,16 @@ class TreeNode:
         self.state = state
         self.board = board
         self.cost = cost
-        self.possible_actions = board.get_legal_moves(state)
         self.children: List[TreeNode] = []
         self.parent_node = parent_node
         #profundidad de un nodo
         self.level = level
         self.is_goal = is_goal
         self.action_direction = action_direction
+        # Fix 4: ya NO calculamos get_legal_moves() al construir el nodo.
+        # Antes se calculaba aquí para TODOS los nodos creados, incluso los que
+        # should_visit() descarta inmediatamente sin nunca expandirlos.
+        # Ahora se calcula de forma lazy dentro de expand(), solo cuando hace falta.
 
     def __lt__(self, other: "TreeNode") -> bool:
         # Tertiary heap tiebreaker (fires only when the full priority tuple is equal).
@@ -28,7 +31,9 @@ class TreeNode:
         if  self.board.is_in_deadlock(self.state):
             return self.children
 
-        for direction in self.possible_actions:
+        # Fix 4: calculamos los movimientos legales aquí, de forma lazy.
+        # Solo los nodos que realmente se expanden pagan este costo.
+        for direction in self.board.get_legal_moves(self.state):
             new_state = self.state.copy()
             move_result = self.board.move(direction, new_state) == MoveResult.WIN
             new_node = TreeNode(new_state, self.board, self.cost + 1, move_result, self.level+1, direction, self)

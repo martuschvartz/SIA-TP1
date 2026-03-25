@@ -24,10 +24,28 @@ class AStarStrategy(SearchStrategy):
     def __init__(self, snapshot: BoardSnapshot) -> None:
         self._frontier: list[tuple[int, int, TreeNode]] = []
         self._known: dict[_StateKey, int] = {}
-        self._snapshot = snapshot
+
+        # Fix 2: resolvemos la función heurística UNA sola vez al construir la estrategia.
+        # Antes se resolvía en cada push() con un import + lookup al settings + búsqueda en
+        # el registro, lo cual se ejecutaba millones de veces durante la búsqueda.
+        self._h_fn = Heuristics.get_heuristic_fn()
+        self._goals = snapshot.goals
+
+        # Fix 1: caché de heurística indexada por posiciones de cajas.
+        # La heurística solo depende de DÓNDE están las cajas (no del jugador).
+        # Si el jugador se mueve sin empujar ninguna caja, el valor es idéntico
+        # pero antes se recalculaba desde cero. Con este dict, es O(1) en cache hit.
+        self._h_cache: dict[frozenset[tuple[int, int]], int] = {}
 
     def push(self, node: TreeNode) -> None:
-        h = Heuristics.apply_heuristic(node.state, self._snapshot)
+        boxes = node.state.get_boxes_positions()
+
+        # Consultamos el caché antes de calcular; si ya conocemos h para esta
+        # configuración de cajas, evitamos toda la computación de la heurística.
+        if boxes not in self._h_cache:
+            self._h_cache[boxes] = self._h_fn(node.state, self._goals)
+        h = self._h_cache[boxes]
+
         heapq.heappush(self._frontier, (node.cost + h, h, node))
 
     def pop(self) -> TreeNode:

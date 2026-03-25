@@ -20,10 +20,22 @@ class GreedyStrategy(SearchStrategy):
     def __init__(self, snapshot: BoardSnapshot) -> None:
         self._frontier: list[tuple[int, int, TreeNode]] = []
         self._visited: set[_StateKey] = set()
-        self._snapshot = snapshot
+
+        # Fix 2: igual que en A*, resolvemos la función heurística una sola vez.
+        self._h_fn = Heuristics.get_heuristic_fn()
+        self._goals = snapshot.goals
+
+        # Fix 1: mismo caché por configuración de cajas que en A*.
+        self._h_cache: dict[frozenset[tuple[int, int]], int] = {}
 
     def push(self, node: TreeNode) -> None:
-        h = Heuristics.apply_heuristic(node.state, self._snapshot)
+        boxes = node.state.get_boxes_positions()
+
+        # Reutilizamos el valor cacheado si ya calculamos h para estas posiciones de cajas.
+        if boxes not in self._h_cache:
+            self._h_cache[boxes] = self._h_fn(node.state, self._goals)
+        h = self._h_cache[boxes]
+
         heapq.heappush(self._frontier, (h, node.level, node))
 
     def pop(self) -> TreeNode:

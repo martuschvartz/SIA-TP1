@@ -32,6 +32,16 @@ def validate_heuristic_name(name: str) -> None:
 
 class Heuristics:
     @staticmethod
+    def get_heuristic_fn() -> Callable[[BoardState, frozenset[tuple[int, int]]], int]:
+        """
+        Devuelve la función heurística configurada, resuelta UNA sola vez.
+        Así las estrategias (A*, Greedy) la guardan en __init__ y no repiten
+        el import + lookup al settings + búsqueda en el registro en cada push().
+        """
+        from search_methods.settings import Settings
+        return _HEURISTIC_REGISTRY[Settings.get_heuristic()]
+
+    @staticmethod
     def apply_heuristic(state: BoardState, snapshot: BoardSnapshot) -> int:
         from search_methods.settings import Settings
 
