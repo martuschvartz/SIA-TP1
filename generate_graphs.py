@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import os
@@ -16,12 +17,11 @@ INPUT_CSV_FILEPATH = "search_runs.csv"
 # Carpeta donde se van a guardar todas las imágenes PNG generadas.
 OUTPUT_CHARTS_FOLDER = "results_charts"
 
+# Valor de timeout
+TIMEOUT_VALUE = 1200
+
 # Si la carpeta no existe, la creamos. exist_ok=True evita error si ya existe.
 os.makedirs(OUTPUT_CHARTS_FOLDER, exist_ok=True)
-
-# Tiempo límite de búsqueda en segundos. Se usa para dibujar la línea roja de
-# "timeout" en los gráficos, como referencia visual.
-SEARCH_TIMEOUT_LIMIT_SECONDS = 1200
 
 
 # =============================================================================
@@ -67,9 +67,65 @@ def load_and_clean_dataframe(csv_filepath):
     raw_results_dataframe['processing_time_seconds'] = pd.to_numeric(raw_results_dataframe['processing_time_seconds'], errors='coerce')
     raw_results_dataframe['expanded_nodes']           = pd.to_numeric(raw_results_dataframe['expanded_nodes'],           errors='coerce')
     raw_results_dataframe['frontier_nodes_inserted']  = pd.to_numeric(raw_results_dataframe['frontier_nodes_inserted'],  errors='coerce')
+    raw_results_dataframe['solution_cost'] = pd.to_numeric(raw_results_dataframe['solution_cost'], errors='coerce')
 
-    return raw_results_dataframe
+    return raw_results_dataframe.drop_duplicates()
 
+
+import math
+
+# =============================================================================
+# FUNCIÓN: get_scale
+# Calcula el límite máximo para usar en el eje y en función del timeout
+# =============================================================================
+
+import math
+
+import math
+
+def get_scale(max_value):
+    """
+    Calcula un límite superior para el eje Y.
+    Toma el valor máximo observado en los datos y retorna
+    un valor mayor o igual a max_value, redondeada un número "lindo".
+    """
+
+    # Caso borde: si el valor es 0 o inválido, se devuelve la escala mínima
+    if pd.isna(max_value) or max_value <= 0:
+        return 1
+
+    # -----------------------------------------------------------------------------------
+    # Paso 1: encontrar el orden de magnitud del número -> en qué escala estoy trabajando
+    # Ej: si el nro es 1.2 estoy trabajando en 10^0 -> orden magnitud = 1
+    # -----------------------------------------------------------------------------------
+    magnitude = 10 ** math.floor(math.log10(max_value))
+
+    # ---------------------------------------------------------------------
+    # Paso 2: normalizar el valor
+    # Dividimos por la magnitud para llevar el número al rango [1, 10)
+    # ---------------------------------------------------------------------
+    normalized = max_value / magnitude
+
+    # -----------------------------------------------------
+    # Paso 3: Se elige un número de la siguiente secuencia
+    #
+    # Se usa la secuencia:
+    #   1, 2, 5, 10
+    # -----------------------------------------------------
+    if normalized <= 1:
+        nice = 1
+    elif normalized <= 2:
+        nice = 2
+    elif normalized <= 5:
+        nice = 5
+    else:
+        nice = 10
+
+    # --------------------------------------------------------
+    # Paso 4: Se multiplica el número "lindo" por la magnitud
+    # para llevarlo a la escala original del valor máximo
+    # --------------------------------------------------------
+    return nice * magnitude
 
 # =============================================================================
 # SET DE GRÁFICOS 1: MÉTRICAS INDIVIDUALES POR NIVEL
@@ -77,6 +133,7 @@ def load_and_clean_dataframe(csv_filepath):
 #   1. Tiempo de procesamiento por algoritmo.
 #   2. Nodos expandidos por algoritmo.
 #   3. Nodos insertados en la frontera por algoritmo.
+#   4. Costo hasta la solución por algoritmo
 # =============================================================================
 def plot_individual_metrics_per_level(full_results_dataframe, target_level_name):
     """Genera 3 imágenes separadas (Tiempo, Expandidos, Frontera) para un nivel."""
@@ -99,8 +156,13 @@ def plot_individual_metrics_per_level(full_results_dataframe, target_level_name)
     # -------------------------------------------------------------------------
     per_algorithm_aggregated_stats = single_level_dataframe.groupby('full_method').agg(
         time=('processing_time_seconds', 'mean'),
+        max_time=('processing_time_seconds', 'max'),
         expanded_nodes=('expanded_nodes', 'mean'),
+        expanded_nodes_max=('expanded_nodes', 'max'),
         frontier_nodes=('frontier_nodes_inserted', 'mean'),
+        frontier_nodes_max=('frontier_nodes_inserted', 'max'),
+        cost=('solution_cost', 'mean'),
+        cost_max=('solution_cost', 'max'),
         result=('result', lambda x: x.mode()[0])
     ).reset_index()
 
@@ -128,30 +190,32 @@ def plot_individual_metrics_per_level(full_results_dataframe, target_level_name)
     plt.figure(figsize=(8, 6))
 
     # Dibujamos las barras. Cada barra = un algoritmo. El color ya refleja resultado.
-    processing_time_bars = plt.bar(algorithm_name_labels, per_algorithm_aggregated_stats['time'], color=time_bar_colors_by_result, edgecolor='black')
+    processing_time_bars = plt.bar(
+        algorithm_name_labels,
+        per_algorithm_aggregated_stats['time'],
+        color=time_bar_colors_by_result,
+        edgecolor='black'
+    )
 
     plt.ylabel("Seconds", fontsize=12)
 
-    # Línea horizontal roja punteada que indica el límite de timeout.
-    # Si una barra llega hasta ahí (o la supera), el algoritmo se quedó sin tiempo.
-    plt.axhline(
-        y=SEARCH_TIMEOUT_LIMIT_SECONDS,
-        color='red',
-        linestyle='--',
-        alpha=0.5,
-        label=f"Timeout Limit ({SEARCH_TIMEOUT_LIMIT_SECONDS}s)"
-    )
+    # Se define como la altura máxima el valor mayor de tiempo de procesamiento
+    plt.ylim(0, get_scale(per_algorithm_aggregated_stats['time'].max()))
 
     plt.grid(axis='y', linestyle='--', alpha=0.5)
     plt.xticks(rotation=25, ha='right', fontsize=10)
-    plt.legend()
 
     # Anotamos cada barra con su valor numérico encima.
     for bar_index, time_bar in enumerate(processing_time_bars):
         bar_height_value = time_bar.get_height()
 
-        # Etiqueta base: el tiempo en segundos con 1 decimal.
-        bar_annotation_text = f"{bar_height_value:.1f}s"
+        # Etiqueta base: el tiempo en segundos con decimales según el número.
+        if bar_height_value < 0.01:
+            bar_annotation_text = f"{bar_height_value:.4f}s"
+        elif bar_height_value < 1:
+            bar_annotation_text = f"{bar_height_value:.3f}s"
+        else:
+            bar_annotation_text = f"{bar_height_value:.2f}s"
 
         # Si el resultado fue timeout u OOM, lo indicamos explícitamente
         # encima del número para que sea obvio al leer el gráfico.
@@ -187,7 +251,10 @@ def plot_individual_metrics_per_level(full_results_dataframe, target_level_name)
         algorithm_name_labels, per_algorithm_aggregated_stats['expanded_nodes'], color='orange', edgecolor='black'
     )
 
-    plt.ylabel("Node Count", fontsize=12)
+    # Se define como la altura máxima el valor mayor de nodos expandidos
+    plt.ylim(0, get_scale(per_algorithm_aggregated_stats['expanded_nodes_max'].max()))
+
+    plt.ylabel("Expanded Nodes Count", fontsize=12)
     plt.grid(axis='y', linestyle='--', alpha=0.5)
     plt.xticks(rotation=25, ha='right', fontsize=10)
 
@@ -211,7 +278,7 @@ def plot_individual_metrics_per_level(full_results_dataframe, target_level_name)
     plt.close()
 
     # =========================================================================
-    # GRÁFICO 3 de 3: Nodos Insertados en la Frontera
+    # GRÁFICO 3 de 4: Nodos Insertados en la Frontera
     # La frontera es la estructura (cola, pila, heap) que contiene los nodos
     # pendientes de expandir. Este contador mide cuántos nodos fueron
     # añadidos en total durante toda la búsqueda.
@@ -222,7 +289,10 @@ def plot_individual_metrics_per_level(full_results_dataframe, target_level_name)
         algorithm_name_labels, per_algorithm_aggregated_stats['frontier_nodes'], color='mediumpurple', edgecolor='black'
     )
 
-    plt.ylabel("Node Count", fontsize=12)
+    # Se define como la altura máxima el valor máximo de nodos frontera
+    plt.ylim(0, get_scale(per_algorithm_aggregated_stats['frontier_nodes_max'].max()))
+
+    plt.ylabel("Frontier Nodes Count", fontsize=12)
     plt.grid(axis='y', linestyle='--', alpha=0.5)
     plt.xticks(rotation=25, ha='right', fontsize=10)
 
@@ -243,7 +313,44 @@ def plot_individual_metrics_per_level(full_results_dataframe, target_level_name)
     plt.savefig(os.path.join(OUTPUT_CHARTS_FOLDER, f"frontier_nodes_{target_level_name}.png"), dpi=300)
     plt.close()
 
-    print(f"Guardados 3 gráficos individuales (Tiempo, Expandidos, Frontera) para {target_level_name}.")
+    # =========================================================================
+    # GRÁFICO 4 de 4: Costo hasta la solución
+    # El costo hacia la solución es la cantidad de movimientos realizados
+    # =========================================================================
+    plt.figure(figsize=(8, 6))
+
+    cost_bars = plt.bar(
+        algorithm_name_labels, per_algorithm_aggregated_stats['cost'], color='palegreen', edgecolor='black'
+    )
+
+    # Se define como la altura máxima el valor máximo de solución
+    plt.ylim(0, get_scale(per_algorithm_aggregated_stats['cost_max'].max()))
+
+    plt.ylabel("Solution Cost", fontsize=12)
+    plt.grid(axis='y', linestyle='--', alpha=0.5)
+    plt.xticks(rotation=25, ha='right', fontsize=10)
+
+    for i, bar in enumerate(cost_bars):
+        h = bar.get_height()
+
+        if pd.notna(h) and h > 0:
+            # Caso Éxito: Mostramos el costo numérico
+            plt.annotate(f"{int(h):,}", xy=(bar.get_x() + bar.get_width() / 2, h),
+                         xytext=(0, 3), textcoords="offset points", ha='center', va='bottom')
+        else:
+            # Caso Fallo (NaN): Sería cuando no se encontró una solución
+            result_label = str(algorithm_result_labels.iloc[i]).upper()
+            plt.annotate(f"no solution\n({result_label})",
+                         xy=(bar.get_x() + bar.get_width() / 2, 0),
+                         xytext=(0, 5), textcoords="offset points",
+                         ha='center', va='bottom', color='red',
+                         fontweight='bold', fontsize=8)
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(OUTPUT_CHARTS_FOLDER, f"cost_bars_{target_level_name}.png"), dpi=300)
+    plt.close()
+
+    print(f"Guardados 4 gráficos individuales (Tiempo, Expandidos, Frontera, Costos) para {target_level_name}.")
 
 
 # =============================================================================
@@ -266,15 +373,24 @@ def plot_scalability_line_per_algorithm(full_results_dataframe, level_name_to_di
     # Son niveles extras que no queremos mostrar en el gráfico de escalabilidad.
     full_results_dataframe = full_results_dataframe.dropna(subset=['difficulty'])
 
-    # Agrupamos por (nombre_nivel, dificultad, algoritmo) y promediamos el tiempo.
+    # Agrupamos por (nombre_nivel, dificultad, algoritmo) y promediamos el tiempo. Se agrega
+    # también los valores de desvío estándar y de cantidad de corridas para poder calcular luego el error.
     # Incluimos 'difficulty' en el groupby para que quede disponible en el resultado.
     per_level_per_algorithm_aggregated_stats = full_results_dataframe.groupby(['level_name', 'difficulty', 'full_method']).agg(
-        time=('processing_time_seconds', 'mean')
+        time_mean=('processing_time_seconds', 'mean'),
+        time_std=('processing_time_seconds', 'std'),
+        n_runs=('processing_time_seconds', 'count')
     ).reset_index()
 
     # Ordenamos por dificultad ascendente para que la línea vaya de izquierda
     # (fácil) a derecha (difícil).
     per_level_per_algorithm_aggregated_stats = per_level_per_algorithm_aggregated_stats.sort_values(by='difficulty')
+
+    # Se agrega una nueva columna para el error
+    per_level_per_algorithm_aggregated_stats['time_se'] = (
+            per_level_per_algorithm_aggregated_stats['time_std'] /
+            np.sqrt(per_level_per_algorithm_aggregated_stats['n_runs'])
+    )
 
     # Obtenemos la lista de algoritmos únicos para iterar y generar un PNG por cada uno.
     unique_algorithm_method_names = per_level_per_algorithm_aggregated_stats['full_method'].unique()
@@ -288,32 +404,31 @@ def plot_scalability_line_per_algorithm(full_results_dataframe, level_name_to_di
         plt.figure(figsize=(8, 6))
 
         # Dibujamos la línea. El eje X es el score de dificultad; el Y es el tiempo promedio.
-        # marker='o' pone un punto en cada nivel medido.
-        plt.plot(
+        # marker='o' pone un punto en cada nivel medido. Se agregan las barras de error
+        plt.errorbar(
             single_algorithm_dataframe['difficulty'],
-            single_algorithm_dataframe['time'],
+            single_algorithm_dataframe['time_mean'],
+            yerr=single_algorithm_dataframe['time_se'],
             marker='o',
             linewidth=2,
             markersize=8,
-            color='dodgerblue',
-            alpha=0.8,
-            label=algorithm_method_name
+            capsize=5
         )
 
+        plt.ylim(0, get_scale(single_algorithm_dataframe['time_mean'].max()))
         plt.title(f"Scalability Progression: {algorithm_method_name}", fontsize=14, fontweight='bold')
         plt.xlabel("Difficulty Score (Moves + 20*Boxes)", fontsize=12)
         plt.ylabel("Average Time (Seconds)", fontsize=12)
 
         # Línea roja de referencia del timeout, igual que en los gráficos de barras.
         plt.axhline(
-            y=SEARCH_TIMEOUT_LIMIT_SECONDS,
+            y=TIMEOUT_VALUE,
             color='red',
             linestyle='--',
             alpha=0.5,
-            label=f'Timeout Limit ({SEARCH_TIMEOUT_LIMIT_SECONDS}s)'
+            label=f'Timeout Limit ({TIMEOUT_VALUE}s)'
         )
 
-        plt.legend()
         plt.grid(True, linestyle='--', alpha=0.6)
         plt.tight_layout()
 
@@ -358,8 +473,10 @@ if __name__ == "__main__":
         # los 3 gráficos individuales (tiempo, expandidos, frontera).
         # -----------------------------------------------------------------
         levels_to_plot = [
-            'LEVEL1',
-            'LEVEL3'
+            'LEVEL1-Easy',
+            'LEVEL3-Middle(many walls)',
+            'LEVEL4-Middle(many boxes)',
+            'LEVEL5-Hard(many boxes)',
         ]
         for level_name in levels_to_plot:
             plot_individual_metrics_per_level(cleaned_results_dataframe, level_name)
@@ -371,8 +488,10 @@ if __name__ == "__main__":
         # permite ordenar los niveles en el eje X del gráfico de líneas.
         # -----------------------------------------------------------------
         CALCULATED_LEVEL_DIFFICULTY_SCORES = {
-            'LEVEL1': 110,
-            'LEVEL3': 250,
+            'LEVEL1-Easy': 1,
+            'LEVEL3-Middle(many walls)': 3,
+            'LEVEL4-Middle(many boxes)': 4,
+            'LEVEL5-Hard(many boxes)': 5
         }
 
         plot_scalability_line_per_algorithm(cleaned_results_dataframe, CALCULATED_LEVEL_DIFFICULTY_SCORES)
