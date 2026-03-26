@@ -7,9 +7,68 @@ from pathlib import Path
 from time import perf_counter
 
 SEARCH_METHODS = ("bfs", "dfs", "greedy", "a*")
-HEURISTICS = ("manhattan", "hungarian")
+HEURISTICS = ("manhattan", "hungarian", "mixed")
 INFORMED_METHODS = {"greedy", "a*"}
+RUNS_PER_COMBO = 10
 
+W = 60  # box width
+
+
+# ── ASCII helpers ──────────────────────────────────────────
+
+def _bar(char: str = "─") -> str:
+    return char * W
+
+
+def _header(title: str) -> str:
+    pad = W - 2 - len(title)
+    left = pad // 2
+    right = pad - left
+    return f"┌{'─' * (W - 2)}┐\n│{' ' * left}{title}{' ' * right}│\n└{'─' * (W - 2)}┘"
+
+
+def _section(label: str) -> str:
+    inner = f"  {label}  "
+    dash = (W - len(inner)) // 2
+    return f"{'─' * dash}{inner}{'─' * (W - dash - len(inner))}"
+
+
+def _combo_banner(idx: int, total: int, level: str, method: str, heuristic: str | None) -> str:
+    h_text = heuristic if heuristic else "—"
+    tag = f"[{idx}/{total}]"
+    info = f"{level}  ·  {method}  ·  {h_text}"
+    lines = [
+        _bar("─"),
+        f"  {tag:<8} {info}",
+        _bar("─"),
+    ]
+    return "\n".join(lines)
+
+
+def _run_line(run: int, total: int, ok: bool, elapsed: float) -> str:
+    status = "ok " if ok else "ERR"
+    return f"    ▶  run {run:>{len(str(total))}}/{total}  ·  {status}  ({elapsed:.3f}s)"
+
+
+def _combo_summary(passed: int, total: int) -> str:
+    if passed == total:
+        return f"  ✓  {passed}/{total} passed\n"
+    return f"  ✗  {passed}/{total} passed  ({total - passed} failed)\n"
+
+
+def _final_banner(total: int, failures: int) -> str:
+    passed = total - failures
+    status = "ALL PASSED" if failures == 0 else f"{failures} FAILED"
+    lines = [
+        "",
+        _bar("═"),
+        f"  DONE  ·  {total} runs  ·  {passed} ok  ·  {status}",
+        _bar("═"),
+    ]
+    return "\n".join(lines)
+
+
+# ── core logic ─────────────────────────────────────────────
 
 def discover_levels(maps_dir: Path) -> list[Path]:
     levels = sorted(p for p in maps_dir.glob("*.txt") if p.is_file())
@@ -29,12 +88,9 @@ def build_command(
     cmd = [
         python_exec,
         str(main_py),
-        "--mode",
-        "ai",
-        "--search-method",
-        search_method,
-        "--map",
-        str(level_path),
+        "--mode", "ai",
+        "--search-method", search_method,
+        "--map", str(level_path),
     ]
     if heuristic is not None:
         cmd.extend(["--heuristic", heuristic])
@@ -47,6 +103,7 @@ def run_all(
     project_root: Path,
     replay: bool,
     continue_on_error: bool,
+    runs_per_combo: int = RUNS_PER_COMBO,
 ) -> int:
     main_py = project_root / "main.py"
     maps_dir = project_root / "resources" / "maps"
@@ -70,30 +127,25 @@ def run_all(
             else:
                 combos.append((method, None, level))
 
-    print(f"Levels found: {len(levels)}")
-    print(f"Total runs: {len(combos)}")
+    total_runs = len(combos) * runs_per_combo
+
+    print(_header("SIA-TP1  ·  BULK SOLVER"))
+    print()
+    print(f"  Levels       : {len(levels)}")
+    print(f"  Combos       : {len(combos)}")
+    print(f"  Runs / combo : {runs_per_combo}")
+    print(f"  Total runs   : {total_runs}")
+    print()
 
     failures = 0
     total_executions = 0
-    combo_duration_seconds = 120.0
 
     for i, (method, heuristic, level) in enumerate(combos, start=1):
-        h_text = heuristic if heuristic is not None else "N/A"
-        print(
-            f"[{i}/{len(combos)}] level={level.name} method={method} heuristic={h_text}"
-        )
+        print(_combo_banner(i, len(combos), level.name, method, heuristic))
 
-        combo_start = perf_counter()
-        run = 0
-
-        while perf_counter() - combo_start < combo_duration_seconds and run < 20:
-            run += 1
+        combo_failures = 0
+        for run in range(1, runs_per_combo + 1):
             total_executions += 1
-            elapsed = perf_counter() - combo_start
-            print(
-                f"  -> Executing #{run} (elapsed {elapsed:.2f}/{combo_duration_seconds:.0f}s)"
-            )
-
             cmd = build_command(
                 python_exec=sys.executable,
                 main_py=main_py,
@@ -102,25 +154,31 @@ def run_all(
                 heuristic=heuristic,
                 replay=replay,
             )
-
+            t0 = perf_counter()
             result = subprocess.run(cmd, cwd=project_root)
-            if result.returncode != 0:
+            elapsed = perf_counter() - t0
+            ok = result.returncode == 0
+
+            print(_run_line(run, runs_per_combo, ok, elapsed))
+
+            if not ok:
                 failures += 1
-                print(f"  -> failed with exit code {result.returncode}")
+                combo_failures += 1
                 if not continue_on_error:
-                    print("Stopping at first failure. Use --continue-on-error to keep going.")
+                    print()
+                    print("  Stopping at first failure. Use --continue-on-error to keep going.")
+                    print(_final_banner(total_executions, failures))
                     return result.returncode
 
-    print("\nDone.")
-    print(f"Total executions: {total_executions}")
-    print(f"Successful executions: {total_executions - failures}")
-    print(f"Failed executions: {failures}")
+        print(_combo_summary(runs_per_combo - combo_failures, runs_per_combo))
+
+    print(_final_banner(total_executions, failures))
     return 0 if failures == 0 else 1
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Run all combinations of search_method, heuristic (if applicable), and level."
+        description="Run all combinations of search_method × heuristic × level, N times each."
     )
     parser.add_argument(
         "--project-root",
@@ -138,6 +196,13 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Continue remaining combinations even if one run fails.",
     )
+    parser.add_argument(
+        "--runs",
+        type=int,
+        default=RUNS_PER_COMBO,
+        metavar="N",
+        help=f"Number of runs per combo (default: {RUNS_PER_COMBO}).",
+    )
     return parser.parse_args()
 
 
@@ -148,5 +213,6 @@ if __name__ == "__main__":
             project_root=args.project_root.resolve(),
             replay=args.replay,
             continue_on_error=args.continue_on_error,
+            runs_per_combo=args.runs,
         )
     )

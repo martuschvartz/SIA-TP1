@@ -473,10 +473,11 @@ if __name__ == "__main__":
         # los 3 gráficos individuales (tiempo, expandidos, frontera).
         # -----------------------------------------------------------------
         levels_to_plot = [
-            'LEVEL1-Easy',
-            'LEVEL3-Middle(many walls)',
-            'LEVEL4-Middle(many boxes)',
-            'LEVEL5-Hard(many boxes)',
+            'LEVEL1-86',
+            'LEVEL2-150',
+            'LEVEL3-167',
+            'LEVEL4-210',
+            'LEVEL5-341'
         ]
         for level_name in levels_to_plot:
             plot_individual_metrics_per_level(cleaned_results_dataframe, level_name)
@@ -488,10 +489,11 @@ if __name__ == "__main__":
         # permite ordenar los niveles en el eje X del gráfico de líneas.
         # -----------------------------------------------------------------
         CALCULATED_LEVEL_DIFFICULTY_SCORES = {
-            'LEVEL1-Easy': 1,
-            'LEVEL3-Middle(many walls)': 3,
-            'LEVEL4-Middle(many boxes)': 4,
-            'LEVEL5-Hard(many boxes)': 5
+            'LEVEL1-86' : 86,
+            'LEVEL2-150': 150,
+            'LEVEL3-167': 167,
+            'LEVEL4-210': 210,
+            'LEVEL5-341': 341 
         }
 
         plot_scalability_line_per_algorithm(cleaned_results_dataframe, CALCULATED_LEVEL_DIFFICULTY_SCORES)
