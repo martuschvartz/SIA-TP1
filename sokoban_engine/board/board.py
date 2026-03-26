@@ -152,23 +152,6 @@ class Board:
 
         return legal
 
-    def legal_directions(self, position: tuple[int,int]) -> list[Direction]:
-        """
-        returns possible box movements given a current position.
-        used to determine whether a box can be moved in a given direction, which is useful
-        to check for unsolvable cases.
-        """
-        legal: list[Direction] = []
-        px,py = position
-        for direction in Direction:
-            dx, dy = direction.delta
-            new_pos = (px + dx, py + dy)
-
-            if new_pos in self._walls:
-                continue
-            legal.append(direction)
-        return legal
-
     def is_in_deadlock(self, state: BoardState) -> bool:
         """Instantly checks if any box is in a deadly corner."""
         for box in state.boxes:

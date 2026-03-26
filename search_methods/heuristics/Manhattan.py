@@ -15,6 +15,8 @@ def manhattan(state: BoardState, goals: frozenset[tuple[int, int]]) -> int:
     if not goals:
         return 0
     total = 0
+    # Como hay varios goals, para cada caja se calcula la distancia contra todos los goals
+    # pero solo se queda uno con la más cercana
     for box_pos in state.get_boxes_positions():
         if box_pos in goals:
             continue
