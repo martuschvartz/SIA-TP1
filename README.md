@@ -26,7 +26,7 @@ Los valores por defecto salen de **`search_methods/config.json`**. Si pasás un 
 |------|--------|
 | `-m` / `--mode` | `player` o `ai` (default: `ai`). |
 | `--search-method` | `bfs`, `dfs`, `a*`, `greedy`. |
-| `--heuristic` | `zero`, `manhattan`, `nearest_goal_per_box`, `hungarian` (debe ser válido para `a*` / `greedy`; en `bfs`/`dfs` no se usa en la prioridad). |
+| `--heuristic` | `zero`, `manhattan`, `hungarian` (debe ser válido para `a*` / `greedy`; en `bfs`/`dfs` no se usa en la prioridad). |
 | `--map` / `--level` | Ruta al archivo de nivel. Si no se pasa, se usa `resources/maps/default.txt`. |
 | `--config` | Ruta a un JSON con la misma forma que `config.json` (reemplaza la carga inicial por defecto de ese archivo). |
 

@@ -11,7 +11,7 @@ class _Settings:
     def __init__(self) -> None:
         self._search_method: str = "a*"
         self._max_tree_depth: int = 10_000
-        self._heuristic: str = "nearest_goal_per_box"
+        self._heuristic: str = "manhattan"
         self._search_timeout_seconds: float = 120.0
 
 
@@ -22,7 +22,7 @@ class _Settings:
         self._search_method = str(data["search_method"])
         self._max_tree_depth = int(data["max_tree_depth"])
 
-        self._heuristic = str(data.get("heuristic", "nearest_goal_per_box"))
+        self._heuristic = str(data.get("heuristic", "manhattan"))
         self._search_timeout_seconds = float(data.get("search_timeout_seconds", 120))
         heuristics_mod = importlib.import_module("search_methods.heuristics")
         heuristics_mod.validate_heuristic_name(self._heuristic)

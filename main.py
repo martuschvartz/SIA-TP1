@@ -47,7 +47,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--heuristic",
         default=None,
         metavar="NAME",
-        help="Override config heuristic (a* / greedy): zero, manhattan, nearest_goal_per_box, hungarian, mixed",
+        help="Override config heuristic (a* / greedy): zero, manhattan, hungarian, mixed",
     )
     parser.add_argument(
         "--map",

@@ -4,9 +4,10 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
+from time import perf_counter
 
 SEARCH_METHODS = ("bfs", "dfs", "greedy", "a*")
-HEURISTICS = ("nearest_goal_per_box", "manhattan", "hungarian", "mixed")
+HEURISTICS = ("manhattan", "hungarian")
 INFORMED_METHODS = {"greedy", "a*"}
 
 
@@ -73,16 +74,26 @@ def run_all(
     print(f"Total runs: {len(combos)}")
 
     failures = 0
+    total_executions = 0
+    combo_duration_seconds = 120.0
+
     for i, (method, heuristic, level) in enumerate(combos, start=1):
         h_text = heuristic if heuristic is not None else "N/A"
         print(
             f"[{i}/{len(combos)}] level={level.name} method={method} heuristic={h_text}"
         )
 
-        runs = 5 # for now
+        combo_start = perf_counter()
+        run = 0
 
-        for run in range(runs):
-            print(f"  -> Executing {run+1}/{runs}")
+        while perf_counter() - combo_start < combo_duration_seconds and run < 20:
+            run += 1
+            total_executions += 1
+            elapsed = perf_counter() - combo_start
+            print(
+                f"  -> Executing #{run} (elapsed {elapsed:.2f}/{combo_duration_seconds:.0f}s)"
+            )
+
             cmd = build_command(
                 python_exec=sys.executable,
                 main_py=main_py,
@@ -101,8 +112,9 @@ def run_all(
                     return result.returncode
 
     print("\nDone.")
-    print(f"Successful runs: {len(combos) - failures}")
-    print(f"Failed runs: {failures}")
+    print(f"Total executions: {total_executions}")
+    print(f"Successful executions: {total_executions - failures}")
+    print(f"Failed executions: {failures}")
     return 0 if failures == 0 else 1
 
 
